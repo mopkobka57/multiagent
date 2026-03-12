@@ -4,7 +4,25 @@ Autonomous task execution system powered by Claude. Reads a backlog,
 picks tasks by priority, writes code through coordinated AI agents,
 runs quality gates, and commits to feature branches for human review.
 
+[![Donate](https://img.shields.io/badge/Donate-ETH%20%2F%20USDT%20%2F%20USDC-8247e5?style=flat&logo=ethereum)](#donate)
+
 ![Overview](screenshots/overview.png)
+
+## Before You Start
+
+### Claude Code
+
+This system is built on top of [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview) — Anthropic's CLI tool for agentic coding. You need to install and authenticate it before using the orchestrator.
+
+1. **Install Claude Code:** follow the [official installation guide](https://docs.anthropic.com/en/docs/claude-code/getting-started)
+2. **Log in:** run `claude` and complete authentication
+
+### Token Usage
+
+The multi-agent system can consume a significant amount of tokens — each task involves multiple AI agents (Orchestrator, Product, Analyst, Implementor, Reviewer), and complex tasks may require hundreds of thousands of tokens.
+
+- **API key users:** monitor your usage carefully. Set token budgets in `multiagent.toml` (`[budgets]` section) to control costs. Start with simple tasks to get a feel for consumption.
+- **Claude Pro/Max subscribers:** the system works within your subscription limits. You may hit rate limits on heavy workloads, but the system handles retries automatically.
 
 ## Quick Start
 
@@ -219,3 +237,15 @@ multiagent/
   output/                  Runtime artifacts (gitignored)
   docs/                    This documentation
 ```
+
+---
+
+## Donate
+
+If this project saves you time, consider supporting its development.
+
+| Currency | Network | Address |
+|----------|---------|---------|
+| **USDT** / **USDC** / **ETH** | Ethereum (ERC-20) | `0x8e152C80a5790927BbeE947FF080075f01bDD907` |
+
+> Send only ERC-20 tokens on **Ethereum mainnet**. Other networks are not supported.
