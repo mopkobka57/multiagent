@@ -76,12 +76,17 @@ async def _init_async(data_dir_name: str, non_interactive: bool, refresh: bool) 
     # --- Step 5: Update .gitignore ---
     _update_gitignore()
 
+    # --- Step 6: Update CLAUDE.md ---
+    print("Updating CLAUDE.md...")
+    _update_claude_md(data_dir_name)
+
     # --- Done ---
     print(f"\n{'=' * 50}")
     print("Initialization complete!")
     print(f"{'=' * 50}")
     print(f"\nCreated:")
     print(f"  multiagent.toml")
+    print(f"  CLAUDE.md (multiagent section)")
     print(f"  {data_dir_name}/backlog.md")
     print(f"  {data_dir_name}/registry.md")
     print(f"  {data_dir_name}/agent_insights.md")
@@ -89,11 +94,12 @@ async def _init_async(data_dir_name: str, non_interactive: bool, refresh: bool) 
     print(f"  {data_dir_name}/specs/_project-conventions.md")
     print(f"\nNext steps:")
     print(f"  1. Review multiagent.toml — adjust if needed")
-    print(f"  2. Review {data_dir_name}/product_context.md — improve if needed")
-    print(f"  3. Add tasks to {data_dir_name}/backlog.md")
-    print(f"  4. Write specs in {data_dir_name}/specs/features/")
-    print(f"  5. Run: python -m multiagent --list")
-    print(f"  6. Run: python -m multiagent --next")
+    print(f"  2. Review CLAUDE.md — add project-specific instructions above the multiagent section")
+    print(f"  3. Review {data_dir_name}/product_context.md — improve if needed")
+    print(f"  4. Add tasks to {data_dir_name}/backlog.md")
+    print(f"  5. Write specs in {data_dir_name}/specs/features/")
+    print(f"  6. Run: python -m multiagent --list")
+    print(f"  7. Run: python -m multiagent --next")
     return True
 
 
@@ -268,6 +274,58 @@ def _write_context_files(data_dir: Path, detection, analysis):
                 gotchas_text,
             )
             insights_path.write_text(content, encoding="utf-8")
+
+
+def _update_claude_md(data_dir_name: str):
+    """Add or update the multiagent section in CLAUDE.md."""
+    import re
+    import tomllib
+
+    claude_md = PROJECT_ROOT / "CLAUDE.md"
+    template = (TEMPLATES_DIR / "CLAUDE_SECTION.md").read_text(encoding="utf-8")
+
+    # Read config values from multiagent.toml for template vars
+    toml_path = PROJECT_ROOT / "multiagent.toml"
+    main_branch = "main"
+    dev_branch = "auto-dev"
+    if toml_path.exists():
+        with open(toml_path, "rb") as f:
+            toml_data = tomllib.load(f)
+        git_cfg = toml_data.get("git", {})
+        main_branch = git_cfg.get("main_branch", "main")
+        dev_branch = git_cfg.get("dev_branch", "auto-dev")
+
+    # Detect how multiagent is invoked relative to project root
+    multiagent_rel = MULTIAGENT_DIR.relative_to(PROJECT_ROOT)
+    run_prefix = f"python -m {str(multiagent_rel).replace('/', '.')}"
+
+    section = template.format_map({
+        "data_dir": data_dir_name,
+        "run_prefix": run_prefix,
+        "main_branch": main_branch,
+        "dev_branch": dev_branch,
+    })
+
+    start_marker = "<!-- multiagent:start -->"
+    end_marker = "<!-- multiagent:end -->"
+
+    if claude_md.exists():
+        content = claude_md.read_text(encoding="utf-8")
+        if start_marker in content:
+            # Replace existing section
+            pattern = re.escape(start_marker) + r".*?" + re.escape(end_marker)
+            content = re.sub(pattern, section.strip(), content, flags=re.DOTALL)
+            print("  Updated existing multiagent section in CLAUDE.md")
+        else:
+            # Append section
+            content = content.rstrip() + "\n\n" + section
+            print("  Added multiagent section to CLAUDE.md")
+        claude_md.write_text(content, encoding="utf-8")
+    else:
+        # Create new file with just the section
+        header = f"# {PROJECT_ROOT.name} — Instructions for Claude\n\n"
+        claude_md.write_text(header + section, encoding="utf-8")
+        print("  Created CLAUDE.md")
 
 
 def _update_gitignore():
