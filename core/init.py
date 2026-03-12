@@ -38,6 +38,16 @@ async def _init_async(data_dir_name: str, non_interactive: bool, refresh: bool) 
     data_dir = PROJECT_ROOT / data_dir_name
     toml_path = PROJECT_ROOT / "multiagent.toml"
 
+    # --- Pre-flight: warn if already initialized ---
+    if not refresh and toml_path.exists():
+        if non_interactive:
+            print("multiagent.toml already exists. Use --refresh to re-run analysis.")
+            return False
+        answer = input("Init already completed. Re-run? [y/N]: ").strip().lower()
+        if answer != "y":
+            print("Exiting. Use --refresh to re-run analysis only.")
+            return False
+
     # --- Step 1: Detection ---
     print("Detecting project structure...")
     from ..analyzer.detect import detect

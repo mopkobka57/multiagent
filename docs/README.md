@@ -18,14 +18,51 @@ pip install -r requirements.txt
 # 2. Initialize for your project
 cd /your-project && multiagent/.venv/bin/python -m multiagent init
 
-# 3. Add tasks to agents_data/backlog.md
+# 3. Describe tasks — via Claude Code, CLI, or manually
+python -m multiagent spec "Add user authentication with JWT"
 
 # 4. Launch the dashboard
 python -m multiagent.server
 # Open http://localhost:8000
 ```
 
-After init, you describe tasks in a backlog, write minimal specs (or let agents generate them), and manage everything through the **web dashboard** — launch agents, group related tasks, watch real-time logs, review results.
+After init, you describe tasks, review generated specs, and manage everything through the **web dashboard** — launch agents, group related tasks, watch real-time logs, review results.
+
+## Creating Tasks
+
+The recommended workflow is to describe what you want and let the system generate structured specs.
+
+### Claude Code (Recommended)
+
+Open your project directory in Claude Code and describe the task naturally:
+
+> "I need a dark mode toggle in the settings page that persists the preference"
+
+Claude will create a spec file, assign a task ID, and add the backlog entry. You review and refine.
+
+This is the fastest way to create specs because Claude has full project context — it reads your codebase, conventions, and existing patterns.
+
+### CLI
+
+```bash
+python -m multiagent spec "Add dark mode to settings page"
+python -m multiagent spec --file feature-draft.md
+python -m multiagent spec "Fix crash on empty email login" --phase 2
+```
+
+The CLI uses AI to generate a structured spec from a description string or a text file.
+
+### Full Workflow
+
+```
+init → describe tasks → review specs → dashboard → review branches
+  │          │               │             │              │
+  ▼          ▼               ▼             ▼              ▼
+ Setup    Claude Code    Edit specs    Run agents    Merge to main
+         or CLI spec    if needed     via dashboard
+```
+
+For the complete spec writing guide, see **[Writing Specs](writing-specs.md)**.
 
 ## How It Works
 
@@ -88,6 +125,7 @@ The CLI is available for automation and scripting. The dashboard covers all the 
 | Command | Description |
 |---------|-------------|
 | `python -m multiagent init` | Initialize for current project |
+| `python -m multiagent spec "desc"` | Create task spec from description or file (`-f`) |
 | `python -m multiagent.server` | **Start web dashboard** |
 | `python -m multiagent --list` | List all tasks with status |
 | `python -m multiagent --next` | Run next priority task |
@@ -104,6 +142,7 @@ The CLI is available for automation and scripting. The dashboard covers all the 
 | Document | Description |
 |----------|-------------|
 | [Getting Started](getting-started.md) | Installation, initialization, first task (10 min) |
+| [Writing Specs](writing-specs.md) | Creating task specs — Claude Code, CLI, manual, tips for good specs |
 | [Web Dashboard](dashboard.md) | Complete guide to the web UI — task list, spec editor, groups, archive, scheduling |
 | [Configuration Reference](configuration.md) | Complete `multiagent.toml` reference — all sections and options |
 | [Backlog & Spec Format](backlog-format.md) | Backlog table format, spec file structure, multiple sources |
@@ -163,6 +202,7 @@ multiagent/
     groups.py              Spec group execution
     scheduler.py           Timer-based deferred execution
     spec_manager.py        Spec CRUD operations
+    spec_creator.py        AI-powered spec generation from descriptions
     init.py                Project initialization
   analyzer/
     detect.py              Filesystem project detection

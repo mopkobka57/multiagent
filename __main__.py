@@ -3,6 +3,8 @@ CLI entry point: python -m multiagent
 
 Usage:
     python -m multiagent init                # Initialize for current project
+    python -m multiagent spec "description"  # Create a task spec from description
+    python -m multiagent spec -f draft.md    # Create a task spec from a file
     python -m multiagent --next              # Run next priority task
     python -m multiagent --task FE1          # Run specific task by ID
     python -m multiagent --resume            # Resume interrupted task
@@ -18,12 +20,16 @@ import asyncio
 
 
 def main():
-    # Handle 'init' as a subcommand (before importing config)
+    # Handle subcommands that run before config import
     if len(sys.argv) >= 2 and sys.argv[1] == "init":
         _handle_init()
         return
 
-    # Import config AFTER init check (init creates the config file)
+    if len(sys.argv) >= 2 and sys.argv[1] == "spec":
+        _handle_spec()
+        return
+
+    # Import config AFTER subcommand checks (init creates the config file)
     from . import config
     from .core.orchestrator import (
         list_tasks,
@@ -94,6 +100,66 @@ def _handle_init():
         refresh=args.refresh,
     )
     sys.exit(0 if success else 1)
+
+
+def _handle_spec():
+    """Handle the spec subcommand — create a spec from a description."""
+    parser = argparse.ArgumentParser(
+        description="Create a task spec from a natural language description"
+    )
+    parser.add_argument(
+        "description", nargs="?", default=None,
+        help="Natural language description of the task",
+    )
+    parser.add_argument(
+        "--file", "-f", type=str, default=None,
+        help="Read task description from a text file",
+    )
+    parser.add_argument(
+        "--phase", default="1",
+        help="Target backlog phase (default: 1)",
+    )
+
+    args = parser.parse_args(sys.argv[2:])
+
+    description = args.description
+
+    # --file takes priority over positional description
+    if args.file:
+        from pathlib import Path
+        file_path = Path(args.file)
+        if not file_path.exists():
+            print(f"Error: file not found: {args.file}")
+            sys.exit(1)
+        description = file_path.read_text(encoding="utf-8").strip()
+        if not description:
+            print(f"Error: file is empty: {args.file}")
+            sys.exit(1)
+
+    # If no description provided, try reading from stdin
+    if not description:
+        if not sys.stdin.isatty():
+            description = sys.stdin.read().strip()
+        if not description:
+            print("Usage: python -m multiagent spec \"description of your task\"")
+            print("       python -m multiagent spec --file spec-draft.md")
+            print("       echo \"description\" | python -m multiagent spec")
+            print("\nOptions:")
+            print("  --file, -f FILE  Read description from a text file")
+            print("  --phase PHASE    Target backlog phase (default: 1)")
+            sys.exit(1)
+
+    from .core.spec_creator import create_spec
+    result = asyncio.run(create_spec(description, phase=args.phase))
+
+    if result["success"]:
+        print(f"Created: {result['task_id']} — {result['title']}")
+        print(f"  Type: {result['type']}")
+        print(f"  Spec: {result['file_path']}")
+        print(f"  Backlog entry added to Phase {args.phase}")
+    else:
+        print(f"Error: {result['error']}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

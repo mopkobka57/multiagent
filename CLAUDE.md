@@ -14,7 +14,7 @@ Code, comments, commits — English.
 
 ```
 multiagent/
-  __main__.py          CLI entry point (init, --next, --task, --list, --batch)
+  __main__.py          CLI entry point (init, spec, --next, --task, --list, --batch)
   config.py            All settings (populated from multiagent.toml at import)
   project_config.py    TOML loader, auto-detection fallback
   core/                Engine
@@ -29,6 +29,7 @@ multiagent/
     git.py             Git operations (branch, commit, checkout)
     retry.py           Rate limit handling with exponential backoff
     spec_manager.py    Spec CRUD, versioning
+    spec_creator.py    AI-powered spec generation from descriptions
     init.py            Project initialization logic
   analyzer/            Project detection + AI analysis (used by init)
   prompts/             Agent system prompts (Markdown templates)
@@ -66,12 +67,42 @@ multiagent/
 
 ```bash
 python -m multiagent init              # Initialize for a project
+python -m multiagent spec "desc"       # Create task spec from description
+python -m multiagent spec -f file.md  # Create task spec from a file
 python -m multiagent --list            # List tasks
 python -m multiagent --next            # Run next priority task
 python -m multiagent --task FE5        # Run specific task
 python -m multiagent --batch           # Run all tasks sequentially
 python -m multiagent.server            # Start web dashboard
 ```
+
+## Creating specs
+
+To create a new task spec:
+
+1. **Determine the type** and ID prefix: FE (feature), TD (tech-debt), RF (refactor), BF (bugfix), AU (audit)
+2. **Generate the next ID**: scan `backlog.md` for the highest number with that prefix, increment by 1
+3. **Create the spec file**: `{data_dir}/specs/{type_dir}/{TASK_ID}-{slug}.md`
+   - Type → directory: feature→`features/`, tech-debt→`tech_debt/`, refactor→`refactor/`, bugfix→`bugfix/`, audit→`audit/`
+4. **Add the metadata header**:
+   ```markdown
+   # Task Title
+
+   **Task ID:** FE3
+   **Type:** feature
+   **Spec Status:** stub
+
+   ---
+   ```
+5. **Add content sections**: Overview, Acceptance Criteria (minimum). For features: also User Experience, Scope.
+6. **Append backlog row** to the target phase table in `{data_dir}/backlog.md`:
+   ```
+   | FE3 | Task title | feature | 3 | 3 | high | stub | auto | Brief description |
+   ```
+
+The `spec` CLI command (`python -m multiagent spec "description"` or `spec -f file.md`) automates all of this with AI.
+
+Full guide: `docs/writing-specs.md`
 
 ## Development workflow
 

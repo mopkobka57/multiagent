@@ -7,6 +7,8 @@ This project uses an autonomous [multi-agent orchestrator](multiagent/) to execu
 
 ```bash
 {run_prefix}.server            # Start web dashboard (http://localhost:8000)
+{run_prefix} spec "desc"       # Create task spec from description
+{run_prefix} spec -f file.md  # Create task spec from a file
 {run_prefix} --list            # List all tasks with status
 {run_prefix} --next            # Run next priority task
 {run_prefix} --task ID         # Run specific task by ID
@@ -52,6 +54,19 @@ What this task does and why.
 Agents will add UX flows, edge cases, technical approach, and implementation steps before coding.
 
 For full spec format and examples: `multiagent/docs/backlog-format.md`
+
+### Creating specs
+
+**CLI:** `{run_prefix} spec "description"` or `{run_prefix} spec -f draft.md` — AI generates spec file + backlog entry from a description or text file.
+
+**Manual creation:**
+1. Pick a type prefix: FE (feature), TD (tech-debt), RF (refactor), BF (bugfix), AU (audit)
+2. Find the next ID: check `{data_dir}/backlog.md` for the highest number with that prefix, increment by 1
+3. Create the file: `{data_dir}/specs/{{type_dir}}/{{TASK_ID}}-{{slug}}.md` (type → dir: feature→`features/`, tech-debt→`tech_debt/`, refactor→`refactor/`, bugfix→`bugfix/`, audit→`audit/`)
+4. Add metadata header (Task ID, Type, Spec Status) + Overview + Acceptance Criteria
+5. Append a row to the target phase table in `{data_dir}/backlog.md`
+
+Full guide: `multiagent/docs/writing-specs.md`
 
 ### Key files
 
