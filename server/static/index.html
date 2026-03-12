@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Monitor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            bg: '#0f1117',
+            card: '#161b22',
+            'card-hover': '#1c2333',
+            border: '#2d333b',
+            text: '#e0e0e0',
+            muted: '#8b949e',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #0f1117 !important; color: #e0e0e0; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #161b22; }
+    ::-webkit-scrollbar-thumb { background: #2d333b; border-radius: 3px; }
+    .log-viewer { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace; font-size: 12px; line-height: 1.5; }
+    .log-viewer .log-line:nth-child(odd) { background: rgba(255,255,255,0.02); }
+
+    /* Markdown — use !important to beat Tailwind's reset */
+    .markdown-content h1 { font-size: 1.6em !important; font-weight: 700 !important; margin: 1em 0 0.5em !important; color: #f0f0f0 !important; border-bottom: 1px solid #2d333b; padding-bottom: 0.3em; }
+    .markdown-content h2 { font-size: 1.3em !important; font-weight: 600 !important; margin: 1.2em 0 0.4em !important; color: #e8e8e8 !important; border-bottom: 1px solid #2d333b40; padding-bottom: 0.2em; }
+    .markdown-content h3 { font-size: 1.1em !important; font-weight: 600 !important; margin: 1em 0 0.3em !important; color: #d8d8d8 !important; }
+    .markdown-content p { margin: 0.6em 0 !important; line-height: 1.6; }
+    .markdown-content ul { list-style: disc !important; padding-left: 1.5em !important; margin: 0.5em 0 !important; }
+    .markdown-content ol { list-style: decimal !important; padding-left: 1.5em !important; margin: 0.5em 0 !important; }
+    .markdown-content li { margin: 0.2em 0; line-height: 1.5; }
+    .markdown-content li > ul, .markdown-content li > ol { margin: 0.2em 0 !important; }
+    .markdown-content code { background: #1e2433; padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.88em; color: #e0a866; }
+    .markdown-content pre { background: #1e2433 !important; padding: 1em !important; border-radius: 6px; overflow-x: auto; margin: 0.8em 0 !important; border: 1px solid #2d333b; }
+    .markdown-content pre code { background: none !important; padding: 0 !important; color: #c9d1d9 !important; font-size: 0.85em; }
+    .markdown-content hr { border: none !important; border-top: 1px solid #2d333b !important; margin: 1.2em 0 !important; }
+    .markdown-content strong { color: #f0f0f0; }
+    .markdown-content a { color: #58a6ff; text-decoration: underline; }
+    .markdown-content blockquote { border-left: 3px solid #2d333b; padding-left: 1em; margin: 0.8em 0; color: #8b949e; }
+    .markdown-content table { border-collapse: collapse !important; width: 100%; margin: 0.8em 0 !important; }
+    .markdown-content th, .markdown-content td { border: 1px solid #2d333b !important; padding: 0.4em 0.8em !important; text-align: left; }
+    .markdown-content th { background: #1e2433 !important; font-weight: 600; }
+    .markdown-content input[type="checkbox"] { margin-right: 0.4em; accent-color: #e09145; }
+  </style>
+</head>
+<body class="min-h-screen" x-data="app()" x-init="init()">
+
+  <!-- Header -->
+  <div class="max-w-[1100px] mx-auto px-4 py-6">
+    <div class="flex items-center justify-between mb-8">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
+          </svg>
+        </div>
+        <h1 class="text-xl font-semibold text-text">Agent Monitor</h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <!-- Git branch controls -->
+        <div class="flex items-center gap-2" x-show="currentBranch">
+          <svg class="w-3.5 h-3.5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+          </svg>
+          <span class="font-mono text-xs px-2 py-0.5 rounded bg-card border border-border text-muted" x-text="currentBranch"></span>
+          <button
+            @click="checkoutBranch('main')"
+            :disabled="checkoutLoading || currentBranch === 'main'"
+            class="px-2 py-0.5 text-[10px] font-medium rounded border transition-colors"
+            :class="currentBranch === 'main' ? 'bg-emerald-900/30 text-emerald-400 border-emerald-800/40' : 'bg-card hover:bg-card-hover text-muted border-border hover:text-text'"
+          >main</button>
+          <button
+            @click="checkoutBranch('auto-dev')"
+            :disabled="checkoutLoading || currentBranch === 'auto-dev'"
+            class="px-2 py-0.5 text-[10px] font-medium rounded border transition-colors"
+            :class="currentBranch === 'auto-dev' ? 'bg-emerald-900/30 text-emerald-400 border-emerald-800/40' : 'bg-card hover:bg-card-hover text-muted border-border hover:text-text'"
+          >auto-dev</button>
+        </div>
+        <!-- WS indicator -->
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 rounded-full" :class="wsConnected ? 'bg-emerald-500' : 'bg-red-500'"></div>
+          <span class="text-xs text-muted" x-text="wsConnected ? 'Connected' : 'Disconnected'"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== LAUNCH AGENT ======================== -->
+    <div class="mb-8">
+      <div class="flex items-center gap-2">
+        <button
+          @click="launchOpen = !launchOpen"
+          class="flex items-center gap-2 px-4 py-2.5 bg-card hover:bg-card-hover border border-border rounded-lg transition-colors text-sm font-medium"
+        >
+          <svg class="w-4 h-4 transition-transform" :class="launchOpen && 'rotate-90'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+          Launch Agent
+        </button>
+        <button
+          @click="browseAndAddSource()"
+          :disabled="addSourceLoading"
+          class="flex items-center gap-2 px-4 py-2.5 bg-card hover:bg-card-hover border border-border rounded-lg transition-colors text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <svg x-show="!addSourceLoading" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          <svg x-show="addSourceLoading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          <span x-text="addSourceLoading ? 'Selecting...' : 'Add Source'"></span>
+        </button>
+        <!-- Group selection toggle -->
+        <button
+          x-show="!groupSelectionMode"
+          @click="toggleGroupSelectionMode()"
+          class="flex items-center gap-2 px-4 py-2.5 bg-card hover:bg-card-hover border border-border rounded-lg transition-colors text-sm font-medium"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Select for Group
+        </button>
+        <template x-if="groupSelectionMode">
+          <div class="flex items-center gap-2">
+            <button
+              @click="groupCreateOpen = true"
+              :disabled="selectedForGroup.length < 1"
+              class="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <span x-text="'Create Group (' + selectedForGroup.length + ' selected)'"></span>
+            </button>
+            <button
+              @click="toggleGroupSelectionMode()"
+              class="px-4 py-2.5 bg-card hover:bg-card-hover border border-border rounded-lg text-sm font-medium text-muted transition-colors"
+            >Cancel</button>
+          </div>
+        </template>
+      </div>
+
+      <div x-show="launchOpen" x-transition.duration.200ms class="mt-3 bg-card border border-border rounded-lg overflow-hidden">
+        <!-- Source tabs -->
+        <div x-show="sources.length > 1" class="flex items-center gap-0 border-b border-border overflow-x-auto px-1 pt-1">
+          <button
+            @click="activeSourceId = null; selectedTaskId = null; selectedSpec = null; resetSpecEditor()"
+            class="px-3 py-1.5 text-xs font-medium rounded-t transition-colors whitespace-nowrap"
+            :class="activeSourceId === null ? 'bg-amber-600/20 text-amber-400 border border-border border-b-transparent -mb-px' : 'text-muted hover:text-text'"
+          >All</button>
+          <template x-for="src in sources" :key="src.id">
+            <div class="flex items-center">
+              <button
+                @click="activeSourceId = src.id; selectedTaskId = null; selectedSpec = null; resetSpecEditor()"
+                class="px-3 py-1.5 text-xs font-medium rounded-t transition-colors whitespace-nowrap"
+                :class="activeSourceId === src.id ? 'bg-amber-600/20 text-amber-400 border border-border border-b-transparent -mb-px' : 'text-muted hover:text-text'"
+                x-text="src.name"
+              ></button>
+              <button
+                x-show="!src.is_default"
+                @click.stop="confirmRemoveSource(src.id, src.name)"
+                class="px-1 py-1 text-muted hover:text-red-400 transition-colors text-xs"
+                title="Remove source"
+              >&times;</button>
+            </div>
+          </template>
+        </div>
+
+        <!-- Task count -->
+        <div class="px-3 py-1.5 text-[10px] text-muted flex justify-between">
+          <span x-text="'Showing ' + getFilteredTasks().length + ' of ' + tasks.length + ' tasks'"></span>
+          <span x-show="activeSourceId" class="font-mono" x-text="'source: ' + activeSourceId"></span>
+        </div>
+
+        <!-- Task List (div-based: avoids Alpine x-for + <template> inside <tbody> DOM parsing bug) -->
+        <div class="overflow-x-auto text-xs">
+          <!-- Header -->
+          <div class="flex items-center border-b border-border text-muted uppercase tracking-wider">
+            <div x-show="groupSelectionMode" class="px-1 py-2 w-8 shrink-0"></div>
+            <div @click="toggleSort('id')" class="px-3 py-2 w-20 shrink-0 cursor-pointer hover:text-text select-none transition-colors">ID<span class="text-amber-400" x-text="sortIcon('id')"></span></div>
+            <div class="px-1 py-2 w-6 shrink-0 text-center"></div>
+            <div @click="toggleSort('title')" class="px-3 py-2 flex-1 min-w-0 cursor-pointer hover:text-text select-none transition-colors">Title<span class="text-amber-400" x-text="sortIcon('title')"></span></div>
+            <div @click="toggleSort('source')" class="px-3 py-2 w-20 shrink-0 cursor-pointer hover:text-text select-none transition-colors">Type<span class="text-amber-400" x-text="sortIcon('source')"></span></div>
+            <div @click="toggleSort('phase')" class="px-3 py-2 w-10 shrink-0 text-center cursor-pointer hover:text-text select-none transition-colors">Ph<span class="text-amber-400" x-text="sortIcon('phase')"></span></div>
+            <div @click="toggleSort('priority')" class="px-3 py-2 w-10 shrink-0 text-center cursor-pointer hover:text-text select-none transition-colors">Imp<span class="text-amber-400" x-text="sortIcon('priority')"></span></div>
+            <div @click="toggleSort('complexity')" class="px-3 py-2 w-10 shrink-0 text-center cursor-pointer hover:text-text select-none transition-colors">Cplx<span class="text-amber-400" x-text="sortIcon('complexity')"></span></div>
+            <div @click="toggleSort('specStatus')" class="px-3 py-2 w-14 shrink-0 text-center cursor-pointer hover:text-text select-none transition-colors">Spec<span class="text-amber-400" x-text="sortIcon('specStatus')"></span></div>
+            <div @click="toggleSort('humanInput')" class="px-3 py-2 w-14 shrink-0 text-center cursor-pointer hover:text-text select-none transition-colors">Human<span class="text-amber-400" x-text="sortIcon('humanInput')"></span></div>
+          </div>
+          <!-- Rows -->
+          <template x-for="(task, idx) in getFilteredTasks()" :key="task.id + '-' + idx">
+            <div
+              @click="selectTask(task)"
+              class="flex items-center border-b border-border/50 cursor-pointer transition-colors"
+              :class="{
+                'opacity-60': task.onCooldown && selectedTaskId !== task.id,
+                'bg-amber-500/10': selectedTaskId === task.id,
+                'hover:bg-card-hover': true,
+              }"
+            >
+              <div x-show="groupSelectionMode" class="px-1 py-1.5 w-8 shrink-0" @click.stop>
+                <input type="checkbox"
+                  :checked="selectedForGroup.includes(task.id)"
+                  @change="toggleGroupSelection(task.id)"
+                  class="accent-amber-500"
+                >
+              </div>
+              <div class="px-3 py-1.5 w-20 shrink-0 font-mono font-semibold">
+                <span x-text="task.id"></span>
+                <span x-show="task.onCooldown" class="ml-1 text-[9px] px-1 py-0.5 rounded bg-blue-500/20 text-blue-400 font-normal">re-run</span>
+                <template x-if="taskGroupInfo(task.id)">
+                  <span class="ml-1 text-[9px] px-1.5 py-0.5 rounded"
+                    :class="taskGroupInfo(task.id).color"
+                    x-text="taskGroupInfo(task.id).label"></span>
+                </template>
+              </div>
+              <div class="px-1 py-1.5 w-6 shrink-0 text-center">
+                <span x-show="task.isMerged" class="text-emerald-400 text-sm" title="Merged & accepted">✓</span>
+                <span x-show="!task.isMerged && task.isDone && !task.onCooldown && task.branchExists" class="text-amber-400 text-sm" title="Done, awaiting review">●</span>
+              </div>
+              <div class="px-3 py-1.5 flex-1 min-w-0 truncate" x-text="task.title"></div>
+              <div class="px-3 py-1.5 w-20 shrink-0">
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                  :class="typeBadge(task.source)">
+                  <span x-text="task.source"></span>
+                </span>
+              </div>
+              <div class="px-3 py-1.5 w-10 shrink-0 text-center text-muted" x-text="task.phase"></div>
+              <div class="px-3 py-1.5 w-10 shrink-0 text-center" x-text="Math.round(task.priority * 100)"></div>
+              <div class="px-3 py-1.5 w-10 shrink-0 text-center" x-text="task.complexity"></div>
+              <div class="px-3 py-1.5 w-14 shrink-0 text-center">
+                <span class="text-[10px] px-1.5 py-0.5 rounded"
+                  :class="specBadge(task.specStatus)" x-text="task.specStatus"></span>
+              </div>
+              <div class="px-3 py-1.5 w-14 shrink-0 text-center">
+                <span class="text-[10px] px-1.5 py-0.5 rounded"
+                  :class="humanBadge(task.humanInput)" x-text="task.humanInput"></span>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Selected Spec Preview -->
+        <template x-if="selectedTaskId">
+          <div class="border-t border-border">
+            <div class="px-4 py-3">
+              <!-- Header row -->
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono font-bold text-sm" x-text="selectedTaskId"></span>
+                  <span class="text-xs text-muted" x-text="selectedSpec?.specPath || 'No spec'"></span>
+                  <span x-show="hasSpecEdits" class="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/40 text-amber-400 border border-amber-800/30 font-medium">Edited</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <!-- Accept edits -->
+                  <button x-show="hasSpecEdits" @click="acceptSpecEdits()"
+                    class="p-1.5 bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400 rounded border border-emerald-900/50 transition-colors"
+                    title="Accept edits and save to disk">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </button>
+                  <!-- Reject edits -->
+                  <button x-show="hasSpecEdits" @click="rejectSpecEdits()"
+                    class="p-1.5 bg-red-900/40 hover:bg-red-800/60 text-red-400 rounded border border-red-900/50 transition-colors"
+                    title="Reject edits and revert to original">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                  <!-- Delete Spec -->
+                  <button x-show="selectedSpec && selectedSpec.content"
+                    @click="confirmDeleteSpec = { taskId: selectedTaskId, sourceId: selectedSourceId }"
+                    :disabled="isTaskRunningById(selectedTaskId)"
+                    class="p-1.5 bg-card hover:bg-red-900/40 border border-border hover:border-red-900/50 text-muted hover:text-red-400 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Delete spec and backlog entry">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                  </button>
+                  <!-- Schedule -->
+                  <button
+                    @click="openScheduleModal('task', selectedTaskId, null, tasks.find(t => t.id === selectedTaskId)?.title || selectedTaskId)"
+                    :disabled="isTaskRunningById(selectedTaskId)"
+                    class="px-3 py-1.5 bg-card hover:bg-card-hover border border-border text-xs font-medium rounded transition-colors text-muted hover:text-cyan-400 hover:border-cyan-800/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Schedule
+                  </button>
+                  <!-- Launch -->
+                  <button
+                    @click="launchAgent()"
+                    :disabled="isTaskRunningById(selectedTaskId)"
+                    class="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium rounded transition-colors"
+                  >
+                    <span x-show="isTaskRunningById(selectedTaskId)">Running...</span>
+                    <span x-show="!isTaskRunningById(selectedTaskId) && isOnCooldown(selectedTaskId)">Re-run</span>
+                    <span x-show="!isTaskRunningById(selectedTaskId) && !isOnCooldown(selectedTaskId)">Launch</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Spec content -->
+              <div x-show="specLoading" class="text-muted text-xs py-4">Loading spec...</div>
+              <div x-show="selectedSpec && currentSpecContent" class="markdown-content text-sm max-h-[400px] overflow-y-auto bg-bg rounded-lg p-4 border transition-colors"
+                :class="hasSpecEdits ? 'border-amber-600/40' : 'border-border/50'"
+                x-html="renderMarkdown(currentSpecContent)">
+              </div>
+              <div x-show="selectedSpec && !currentSpecContent && !specLoading" class="text-muted text-xs py-4">
+                Spec not found. Expected path: <span class="font-mono" x-text="'agents_data/specs/' + selectedTaskId + '-*.md'"></span>
+              </div>
+
+              <!-- Error banner -->
+              <div x-show="specEditError" class="mt-2 px-3 py-2 bg-red-900/30 border border-red-800/40 rounded-lg flex items-center justify-between text-xs text-red-400">
+                <span x-text="specEditError"></span>
+                <button @click="specEditError = null" class="ml-2 hover:text-red-300 transition-colors">&times;</button>
+              </div>
+
+              <!-- Instruction textarea -->
+              <div x-show="selectedSpec && selectedSpec.content" class="mt-2 flex gap-2">
+                <textarea
+                  x-model="specEditInstruction"
+                  @keydown.meta.enter="submitSpecEdit()"
+                  @keydown.ctrl.enter="submitSpecEdit()"
+                  @input="$el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 150) + 'px'"
+                  placeholder="Describe how to edit this spec... (Ctrl+Enter to submit)"
+                  rows="1"
+                  class="flex-1 bg-bg border border-border rounded-lg px-3 py-2 text-sm text-text placeholder-muted/60 resize-none focus:outline-none focus:border-amber-600/50 transition-colors"
+                  style="min-height: 38px; max-height: 150px;"
+                ></textarea>
+                <button
+                  @click="submitSpecEdit()"
+                  :disabled="!specEditInstruction.trim() || specEditLoading"
+                  class="px-3 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 self-end"
+                >
+                  <svg x-show="specEditLoading" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                  <span x-show="!specEditLoading">Edit</span>
+                  <span x-show="specEditLoading">Editing...</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- ======================== RUNNING AGENTS ======================== -->
+    <div class="mb-8">
+      <h2 class="text-sm font-medium text-muted uppercase tracking-wider mb-3 flex items-center gap-2">
+        <svg class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
+        </svg>
+        Running Agents
+        <span x-show="activeRuns.length > 0" class="text-amber-500 font-mono text-xs" x-text="'(' + activeRuns.length + ')'"></span>
+      </h2>
+
+      <div x-show="activeRuns.length === 0" class="text-muted text-xs py-4 text-center bg-card border border-border rounded-lg">
+        No agents currently running
+      </div>
+
+      <div class="space-y-2">
+        <template x-for="run in activeRuns" :key="run.taskId">
+          <div class="bg-card border border-border rounded-lg overflow-hidden">
+            <!-- Card header -->
+            <div
+              @click="expandedRuns[run.taskId] = !expandedRuns[run.taskId]; if (expandedRuns[run.taskId] && !(runLogs[run.taskId] || []).length) loadLog(run.taskId)"
+              class="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-card-hover transition-colors"
+            >
+              <div class="flex items-center gap-3">
+                <span class="font-mono font-bold text-sm" x-text="run.taskId"></span>
+                <span class="text-sm" x-text="run.title"></span>
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                  :class="typeBadge(run.source)">
+                  <span x-text="run.source"></span>
+                </span>
+              </div>
+              <div class="flex items-center gap-4 text-xs">
+                <span class="text-amber-400 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></span>
+                  <span x-text="runStatus(run)"></span>
+                </span>
+                <span class="font-mono text-muted" x-text="formatDuration(run.elapsedSeconds)"></span>
+              </div>
+            </div>
+
+            <!-- Expanded content -->
+            <div x-show="expandedRuns[run.taskId]" x-transition.duration.200ms class="border-t border-border">
+              <div class="px-4 py-3 space-y-3">
+                <!-- Live Log -->
+                <div class="bg-bg rounded-lg border border-border/50 overflow-hidden">
+                  <div class="px-3 py-1.5 border-b border-border/50 flex items-center justify-between">
+                    <span class="text-[10px] uppercase tracking-wider text-muted">Live Log</span>
+                    <span class="text-[10px] text-muted" x-text="(runLogs[run.taskId] || []).length + ' lines'"></span>
+                  </div>
+                  <div class="log-viewer max-h-[450px] overflow-y-auto p-2" :id="'log-' + run.taskId"
+                    x-effect="const _html = renderedLogHtml[run.taskId]; $nextTick(() => { $nextTick(() => { const el = document.getElementById('log-' + run.taskId); if(el) el.scrollTop = el.scrollHeight; }); })">
+                    <div x-show="renderedLogHtml[run.taskId]" class="text-sm" x-html="renderedLogHtml[run.taskId]"></div>
+                    <div x-show="!renderedLogHtml[run.taskId]" class="text-muted text-center py-4">Waiting for output...</div>
+                  </div>
+                </div>
+
+                <!-- Stop button -->
+                <div class="flex justify-end">
+                  <button
+                    @click.stop="confirmStop = run.taskId"
+                    class="px-3 py-1.5 bg-red-900/40 hover:bg-red-800/60 text-red-400 text-xs font-medium rounded border border-red-900/50 transition-colors"
+                  >
+                    Stop Agent
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- ======================== RATE LIMIT WAITING ======================== -->
+    <div class="mb-8" x-show="rateLimitWaiting.length > 0">
+      <h2 class="text-sm font-medium text-muted uppercase tracking-wider mb-3 flex items-center gap-2">
+        <svg class="w-4 h-4 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+        </svg>
+        Rate Limit Waiting
+        <span class="text-yellow-400 font-mono text-xs" x-text="'(' + rateLimitWaiting.length + ')'"></span>
+      </h2>
+
+      <div class="space-y-1.5">
+        <template x-for="rl in rateLimitWaiting" :key="rl.taskId">
+          <div class="bg-card border border-yellow-900/40 rounded-lg px-4 py-2.5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="font-mono font-bold text-sm" x-text="rl.taskId"></span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-yellow-900/30 text-yellow-400 font-medium"
+                x-text="'retry ' + rl.retries + '/' + rl.maxRetries"></span>
+              <span x-show="rl.branch" class="font-mono text-xs text-muted" x-text="rl.branch"></span>
+              <span x-show="rl.groupId" class="text-[10px] px-1.5 py-0.5 rounded bg-purple-900/40 text-purple-400 border border-purple-800/30"
+                x-text="'group: ' + rl.groupId"></span>
+            </div>
+            <div class="flex items-center gap-3 text-xs">
+              <span class="text-yellow-400 font-mono flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span x-text="formatCountdown(rl.remainingSeconds)"></span>
+              </span>
+              <span class="text-muted" x-text="'retry at ' + new Date(rl.fireAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })"></span>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- ======================== SPEC GROUPS ======================== -->
+    <div class="mb-8" x-show="groups.length > 0">
+      <h2 class="text-sm font-medium text-muted uppercase tracking-wider mb-3 flex items-center gap-2">
+        <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
+        </svg>
+        Spec Groups
+        <span class="text-purple-400 font-mono text-xs" x-text="'(' + groups.length + ')'"></span>
+      </h2>
+
+      <div class="space-y-2">
+        <template x-for="group in groups" :key="group.id">
+          <div class="bg-card border border-border rounded-lg overflow-hidden">
+            <!-- Header -->
+            <div @click="expandedGroups[group.id] = !expandedGroups[group.id]"
+              class="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-card-hover transition-colors">
+              <div class="flex items-center gap-3">
+                <span class="font-bold text-sm" x-text="group.name"></span>
+                <span class="text-xs text-muted" x-text="group.tasks.length + ' specs'"></span>
+                <span class="font-mono text-xs text-muted" x-text="group.branch"></span>
+              </div>
+              <div class="flex items-center gap-3">
+                <!-- Progress -->
+                <span class="text-xs text-muted" x-text="groupProgress(group)"></span>
+                <!-- Status badge -->
+                <span class="text-xs px-1.5 py-0.5 rounded font-medium"
+                  :class="groupStatusBadge(group.status)"
+                  x-text="group.status"></span>
+                <!-- Action buttons -->
+                <button x-show="group.status === 'idle' || group.status === 'stopped' || group.status === 'completed'"
+                  @click.stop="openScheduleModal('group', null, group.id, group.name)"
+                  class="px-3 py-1 bg-card hover:bg-card-hover border border-border text-xs font-medium rounded transition-colors text-muted hover:text-cyan-400 hover:border-cyan-800/40 flex items-center gap-1">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Schedule
+                </button>
+                <button x-show="group.status === 'idle' || group.status === 'stopped' || group.status === 'completed'"
+                  @click.stop="startGroup(group.id)"
+                  class="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white text-xs font-medium rounded transition-colors">
+                  <span x-text="group.status === 'idle' ? 'Start' : 'Restart'"></span>
+                </button>
+                <button x-show="group.status === 'running'"
+                  @click.stop="stopGroup(group.id)"
+                  class="px-3 py-1 bg-red-900/40 hover:bg-red-800/60 text-red-400 text-xs font-medium rounded border border-red-900/50 transition-colors">Stop</button>
+              </div>
+            </div>
+
+            <!-- Expanded: task list with status -->
+            <div x-show="expandedGroups[group.id]" x-transition.duration.200ms class="border-t border-border px-4 py-3">
+              <div class="space-y-1">
+                <template x-for="(task, idx) in group.tasks" :key="task.task_id">
+                  <div class="flex items-center gap-3 px-3 py-2 rounded"
+                    :class="{
+                      'bg-amber-500/10': group.status === 'running' && idx === group.currentIndex,
+                      'bg-emerald-500/5': group.task_results[task.task_id]?.status === 'done',
+                      'bg-red-500/5': group.task_results[task.task_id]?.status === 'failed',
+                    }">
+                    <!-- Order number -->
+                    <span class="font-mono text-xs text-muted w-4" x-text="idx + 1"></span>
+                    <!-- Status icon -->
+                    <span x-show="group.task_results[task.task_id]?.status === 'done'" class="text-emerald-400 text-sm">&#10003;</span>
+                    <span x-show="group.task_results[task.task_id]?.status === 'failed'" class="text-red-400 text-sm">&#10007;</span>
+                    <span x-show="group.task_results[task.task_id]?.auto_continued" class="text-amber-400 text-[9px]">&rarr; continued</span>
+                    <span x-show="group.status === 'running' && idx === group.currentIndex && !group.task_results[task.task_id]"
+                      class="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></span>
+                    <span x-show="!group.task_results[task.task_id] && !(group.status === 'running' && idx === group.currentIndex)"
+                      class="text-muted/30 text-sm">&#9675;</span>
+                    <!-- Task info -->
+                    <span class="font-mono font-bold text-xs" x-text="task.task_id"></span>
+                    <span class="text-xs" x-text="task.title"></span>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Actions (only when not running) -->
+              <div x-show="group.status !== 'running'" class="flex justify-end mt-3 gap-2">
+                <button x-show="group.status === 'stopped'"
+                  @click.stop="continueGroup(group.id)"
+                  class="px-3 py-1.5 bg-amber-600/80 hover:bg-amber-500 text-white text-xs font-medium rounded transition-colors">
+                  Force Continue
+                </button>
+                <button x-show="group.status === 'stopped'"
+                  @click.stop="retryGroupTask(group.id)"
+                  class="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-500 text-white text-xs font-medium rounded transition-colors">
+                  Retry Failed
+                </button>
+                <button @click.stop="deleteGroup(group.id)"
+                  class="px-3 py-1.5 text-red-400 text-xs rounded border border-red-900/50 hover:bg-red-900/30 transition-colors">
+                  Delete Group
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- ======================== TASK QUEUE ======================== -->
+    <div class="mb-8" x-show="queuedTasks.length > 0">
+      <h2 class="text-sm font-medium text-muted uppercase tracking-wider mb-3 flex items-center gap-2">
+        <svg class="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
+        </svg>
+        Queue
+        <span class="text-blue-400 font-mono text-xs" x-text="'(' + queuedTasks.length + ')'"></span>
+      </h2>
+
+      <div class="space-y-1.5">
+        <template x-for="(item, idx) in queuedTasks" :key="item.taskId || item.groupId">
+          <div class="bg-card border border-border rounded-lg px-4 py-2.5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-muted font-mono" x-text="'#' + (idx + 1)"></span>
+              <span x-show="item.type === 'group'" class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-900/40 text-purple-400 border border-purple-800/30">group</span>
+              <span class="font-mono font-bold text-sm" x-text="item.taskId || item.groupId"></span>
+              <span class="text-sm" x-text="item.title || item.groupName"></span>
+              <span x-show="item.source" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                :class="typeBadge(item.source)">
+                <span x-text="item.source"></span>
+              </span>
+            </div>
+            <button
+              @click="cancelQueuedTask(item.type === 'group' ? item.groupId : item.taskId)"
+              class="px-2.5 py-1 text-xs text-red-400 hover:text-red-300 hover:bg-red-900/30 rounded border border-transparent hover:border-red-900/50 transition-colors"
+            >Cancel</button>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- ======================== SCHEDULED ======================== -->
+    <div class="mb-8" x-show="pendingSchedules.length > 0">
+      <h2 class="text-sm font-medium text-muted uppercase tracking-wider mb-3 flex items-center gap-2">
+        <svg class="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Scheduled
+        <span class="text-cyan-400 font-mono text-xs" x-text="'(' + pendingSchedules.length + ')'"></span>
+      </h2>
+
+      <div class="space-y-1.5">
+        <template x-for="sch in pendingSchedules" :key="sch.id">
+          <div class="bg-card border border-border rounded-lg px-4 py-2.5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                :class="sch.item_type === 'task' ? 'bg-blue-900/40 text-blue-400 border border-blue-800/30' : 'bg-purple-900/40 text-purple-400 border border-purple-800/30'"
+                x-text="sch.item_type"></span>
+              <span class="font-mono font-bold text-sm" x-text="sch.task_id || sch.group_id"></span>
+              <span class="text-sm" x-text="sch.title"></span>
+            </div>
+            <div class="flex items-center gap-3 text-xs">
+              <span class="text-cyan-400 font-mono flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span x-text="formatCountdown(sch.remainingSeconds)"></span>
+              </span>
+              <span class="text-muted" x-text="'fires ' + new Date(sch.fireAtIso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })"></span>
+              <button
+                @click="cancelSchedule(sch.id)"
+                class="px-2.5 py-1 text-red-400 hover:text-red-300 hover:bg-red-900/30 rounded border border-transparent hover:border-red-900/50 transition-colors"
+              >Cancel</button>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- ======================== RUN ARCHIVE ======================== -->
+    <div class="mb-8 opacity-70">
+      <h2 class="text-sm font-medium text-muted uppercase tracking-wider mb-3 flex items-center gap-2">
+        <svg class="w-4 h-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+        </svg>
+        Run Archive
+        <span class="text-muted font-mono text-xs" x-text="'(' + filteredArchive.length + ')'"></span>
+        <!-- Filter buttons -->
+        <div class="flex gap-1 ml-auto">
+          <button @click="archiveFilter = 'all'"
+            :class="archiveFilter === 'all' ? 'text-text border-border' : 'text-muted border-transparent hover:text-text'"
+            class="px-2 py-0.5 text-[10px] font-medium rounded border transition-colors">All</button>
+          <button @click="archiveFilter = 'done'"
+            :class="archiveFilter === 'done' ? 'text-emerald-400 border-emerald-800/50' : 'text-muted border-transparent hover:text-emerald-400'"
+            class="px-2 py-0.5 text-[10px] font-medium rounded border transition-colors">Done</button>
+          <button @click="archiveFilter = 'failed'"
+            :class="archiveFilter === 'failed' ? 'text-red-400 border-red-800/50' : 'text-muted border-transparent hover:text-red-400'"
+            class="px-2 py-0.5 text-[10px] font-medium rounded border transition-colors">Failed</button>
+        </div>
+      </h2>
+
+      <div x-show="filteredArchive.length === 0" class="text-muted text-xs py-4 text-center bg-card border border-border rounded-lg">
+        No past runs
+      </div>
+
+      <div class="space-y-2">
+        <template x-for="entry in filteredArchive" :key="entry.taskId">
+          <div class="bg-card border border-border rounded-lg overflow-hidden">
+            <!-- Card header (collapsed) -->
+            <div
+              @click="expandedArchive[entry.taskId] = !expandedArchive[entry.taskId]"
+              class="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-card-hover transition-colors"
+            >
+              <div class="flex items-center gap-3">
+                <!-- Merge status icon -->
+                <span x-show="entry.branchMerged" class="text-emerald-400 text-sm" title="Merged & accepted">✓</span>
+                <span x-show="!entry.branchMerged && entry.status === 'done' && entry.branchExists" class="text-amber-400 text-sm" title="Awaiting review">●</span>
+                <span x-show="!entry.branchMerged && entry.status === 'done' && !entry.branchExists" class="text-muted/40 text-sm" title="Not accepted">○</span>
+                <span class="font-mono font-bold text-sm" x-text="entry.taskId"></span>
+                <span class="text-sm" x-text="entry.title"></span>
+              </div>
+              <div class="flex items-center gap-4 text-xs">
+                <span x-show="entry.branch && entry.branch !== 'auto-dev'"
+                  class="font-mono"
+                  :class="entry.branchMerged ? 'text-emerald-400/60' : entry.branchExists ? 'text-muted' : 'text-muted/50'"
+                  x-text="entry.branchMerged ? 'merged' : entry.branchExists ? entry.branch : 'deleted'"></span>
+                <span :class="statusColor(entry.status)" x-text="entry.status"></span>
+                <span class="font-mono text-muted" x-text="'$' + (entry.costUsd || 0).toFixed(2)"></span>
+                <span class="text-muted" x-text="formatDateTime(entry.finishedAt || entry.startedAt)"></span>
+              </div>
+            </div>
+
+            <!-- Expanded content -->
+            <div x-show="expandedArchive[entry.taskId]" x-transition.duration.200ms class="border-t border-border">
+              <div class="px-4 py-3 space-y-3">
+                <div class="flex flex-wrap items-center gap-4 text-xs text-muted">
+                  <span x-show="entry.startedAt" x-text="'Started: ' + formatDate(entry.startedAt)"></span>
+                  <span x-show="entry.finishedAt" x-text="'Finished: ' + formatDate(entry.finishedAt)"></span>
+                  <span x-show="entry.branch" class="font-mono" x-text="entry.branch"></span>
+                  <template x-if="entry.branch && entry.branch !== 'auto-dev' && entry.branchExists">
+                    <span class="flex gap-1.5">
+                      <button
+                        @click.stop="checkoutBranch(entry.branch)"
+                        :disabled="checkoutLoading"
+                        class="px-2 py-0.5 text-[10px] font-medium rounded bg-card hover:bg-card-hover text-amber-400 border border-amber-800/40 hover:border-amber-600/60 transition-colors"
+                      >Checkout</button>
+                      <button
+                        @click.stop="loadFiles(entry)"
+                        class="px-2 py-0.5 text-[10px] font-medium rounded bg-card hover:bg-card-hover text-muted border border-border hover:text-text transition-colors"
+                        x-text="entry._files ? 'Hide files' : 'Show files'"
+                      ></button>
+                    </span>
+                  </template>
+                  <span x-show="entry.branch && entry.branch !== 'auto-dev' && !entry.branchExists"
+                    class="text-[10px] italic"
+                    :class="entry.branchMerged ? 'text-emerald-400/60' : 'text-muted/60'"
+                    x-text="entry.branchMerged ? '✓ merged into auto-dev' : 'branch deleted'"></span>
+                </div>
+                <p x-show="entry.summary" class="text-sm text-text/80" x-text="entry.summary"></p>
+
+                <!-- What to check -->
+                <div x-show="entry.userNotice" class="text-xs bg-amber-900/20 border border-amber-800/30 rounded-lg p-3">
+                  <div class="text-[10px] uppercase tracking-wider text-amber-400/80 mb-1">What to check</div>
+                  <p class="text-text/80 whitespace-pre-line" x-text="entry.userNotice"></p>
+                </div>
+
+                <!-- Changed files -->
+                <div x-show="entry._files && entry._files.length > 0" class="text-xs">
+                  <div class="text-[10px] uppercase tracking-wider text-muted mb-1.5">Changed files</div>
+                  <div class="bg-bg rounded-lg border border-border/50 p-2 max-h-[200px] overflow-y-auto">
+                    <template x-for="file in (entry._files || [])" :key="file">
+                      <div class="font-mono text-text/70 py-0.5 px-1" x-text="file"></div>
+                    </template>
+                  </div>
+                </div>
+                <div x-show="entry._filesLoading" class="text-xs text-muted">Loading files...</div>
+
+                <!-- Artifacts -->
+                <div x-show="entry.artifacts && entry.artifacts.length > 0">
+                  <div class="text-[10px] uppercase tracking-wider text-muted mb-2">Artifacts</div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <template x-for="art in (entry.artifacts || [])" :key="art.path">
+                      <button
+                        @click.stop="loadArtifact(entry.taskId, art)"
+                        class="px-2 py-1 text-xs bg-bg border border-border rounded hover:border-amber-600/50 hover:text-amber-400 transition-colors"
+                        :class="selectedArtifact?.path === art.path ? 'border-amber-600 text-amber-400' : ''"
+                        x-text="art.name">
+                      </button>
+                    </template>
+                  </div>
+                </div>
+
+                <!-- Artifact content -->
+                <div x-show="selectedArtifact && selectedArtifact.taskId === entry.taskId">
+                  <div class="bg-bg rounded-lg border border-border/50 max-h-[400px] overflow-y-auto p-4">
+                    <div x-show="artifactLoading" class="text-muted text-xs">Loading...</div>
+                    <div x-show="selectedArtifact?.type === 'markdown'" class="markdown-content text-sm"
+                      x-html="renderMarkdown(selectedArtifact?.content || '')">
+                    </div>
+                    <div x-show="selectedArtifact?.type === 'text'" class="log-viewer text-xs whitespace-pre-wrap"
+                      x-text="selectedArtifact?.content || ''">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== CREATE GROUP MODAL ======================== -->
+  <div
+    x-show="groupCreateOpen"
+    x-transition.opacity.duration.150ms
+    class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+    @click.self="groupCreateOpen = false"
+  >
+    <div class="bg-card border border-border rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl" x-transition.duration.150ms>
+      <h3 class="text-sm font-semibold mb-3">Create Spec Group</h3>
+
+      <!-- Name input -->
+      <input
+        x-model="newGroupName"
+        placeholder="Group name (e.g. Auth System)"
+        class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-text placeholder-muted/60 mb-3 focus:outline-none focus:border-amber-600/50 transition-colors"
+      >
+
+      <!-- Ordered task list -->
+      <div class="text-xs text-muted uppercase tracking-wider mb-1.5">Tasks (drag to reorder)</div>
+      <div class="space-y-1 mb-4 max-h-[300px] overflow-y-auto">
+        <template x-for="(taskId, idx) in selectedForGroup" :key="taskId">
+          <div class="flex items-center gap-2 bg-bg rounded px-3 py-2">
+            <span class="text-muted font-mono text-xs w-4" x-text="idx + 1"></span>
+            <span class="font-mono font-bold text-xs" x-text="taskId"></span>
+            <span class="text-xs truncate flex-1" x-text="getTaskTitle(taskId)"></span>
+            <div class="flex gap-1 shrink-0">
+              <button @click="moveGroupTask(idx, -1)" :disabled="idx === 0"
+                class="px-1.5 py-0.5 text-xs text-muted hover:text-text disabled:opacity-30 transition-colors">&uarr;</button>
+              <button @click="moveGroupTask(idx, 1)" :disabled="idx === selectedForGroup.length - 1"
+                class="px-1.5 py-0.5 text-xs text-muted hover:text-text disabled:opacity-30 transition-colors">&darr;</button>
+              <button @click="removeFromGroup(idx)"
+                class="px-1.5 py-0.5 text-xs text-red-400 hover:text-red-300 transition-colors">&times;</button>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button @click="groupCreateOpen = false" class="px-3 py-1.5 text-xs text-muted hover:text-text transition-colors">
+          Cancel
+        </button>
+        <button @click="createGroup()"
+          :disabled="!newGroupName.trim() || selectedForGroup.length < 1"
+          class="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium rounded transition-colors">
+          Create Group
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== STOP CONFIRMATION MODAL ======================== -->
+  <div
+    x-show="confirmStop"
+    x-transition.opacity.duration.150ms
+    class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+    @click.self="confirmStop = null"
+  >
+    <div class="bg-card border border-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl" x-transition.duration.150ms>
+      <h3 class="text-sm font-semibold mb-2">Stop Agent?</h3>
+      <p class="text-xs text-muted mb-4">
+        Stop agent <span class="font-mono font-bold text-text" x-text="confirmStop"></span>?
+        Progress will be saved, the task can be resumed later.
+      </p>
+      <div class="flex justify-end gap-2">
+        <button @click="confirmStop = null" class="px-3 py-1.5 text-xs text-muted hover:text-text transition-colors">
+          Cancel
+        </button>
+        <button @click="stopAgent(confirmStop); confirmStop = null"
+          class="px-3 py-1.5 bg-red-900/60 hover:bg-red-800/80 text-red-400 text-xs font-medium rounded border border-red-900/50 transition-colors">
+          Stop
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== REMOVE SOURCE CONFIRMATION ======================== -->
+  <div
+    x-show="confirmRemoveSourceId"
+    x-transition.opacity.duration.150ms
+    class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+    @click.self="confirmRemoveSourceId = null"
+  >
+    <div class="bg-card border border-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl" x-transition.duration.150ms>
+      <h3 class="text-sm font-semibold mb-2">Remove Source?</h3>
+      <p class="text-xs text-muted mb-4">
+        Remove source <span class="font-mono font-bold text-text" x-text="confirmRemoveSourceName"></span>?
+        Tasks from this source will no longer be shown.
+      </p>
+      <div class="flex justify-end gap-2">
+        <button @click="confirmRemoveSourceId = null" class="px-3 py-1.5 text-xs text-muted hover:text-text transition-colors">
+          Cancel
+        </button>
+        <button @click="removeSource(confirmRemoveSourceId); confirmRemoveSourceId = null"
+          class="px-3 py-1.5 bg-red-900/60 hover:bg-red-800/80 text-red-400 text-xs font-medium rounded border border-red-900/50 transition-colors">
+          Remove
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== DELETE SPEC CONFIRMATION ======================== -->
+  <div
+    x-show="confirmDeleteSpec"
+    x-transition.opacity.duration.150ms
+    class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+    @click.self="confirmDeleteSpec = null"
+  >
+    <div class="bg-card border border-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl" x-transition.duration.150ms>
+      <h3 class="text-sm font-semibold mb-2">Delete Spec?</h3>
+      <p class="text-xs text-muted mb-1">
+        This will permanently delete the spec file(s) and remove the backlog entry for
+        <span class="font-mono font-bold text-text" x-text="confirmDeleteSpec?.taskId"></span>.
+      </p>
+      <p class="text-xs text-red-400/80 mb-4">This action cannot be undone.</p>
+      <div class="flex justify-end gap-2">
+        <button @click="confirmDeleteSpec = null" class="px-3 py-1.5 text-xs text-muted hover:text-text transition-colors">
+          Cancel
+        </button>
+        <button @click="deleteSpec()"
+          :disabled="deleteSpecLoading"
+          class="px-3 py-1.5 bg-red-900/60 hover:bg-red-800/80 disabled:opacity-40 text-red-400 text-xs font-medium rounded border border-red-900/50 transition-colors flex items-center gap-1.5">
+          <svg x-show="deleteSpecLoading" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SCHEDULE MODAL ======================== -->
+  <div
+    x-show="scheduleModalOpen"
+    x-transition.opacity.duration.150ms
+    class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+    @click.self="scheduleModalOpen = false"
+  >
+    <div class="bg-card border border-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl" x-transition.duration.150ms>
+      <h3 class="text-sm font-semibold mb-1">Schedule Execution</h3>
+      <p class="text-xs text-muted mb-4">
+        <span x-text="scheduleTarget?.type === 'task' ? 'Task' : 'Group'"></span>:
+        <span class="font-mono font-bold text-text" x-text="scheduleTarget?.taskId || scheduleTarget?.title || ''"></span>
+      </p>
+
+      <!-- Mode selector -->
+      <div class="flex gap-1 mb-3">
+        <button @click="scheduleMode = 'delay'"
+          :class="scheduleMode === 'delay' ? 'bg-cyan-600/20 text-cyan-400 border-cyan-800/40' : 'text-muted border-border hover:text-text'"
+          class="flex-1 px-3 py-1.5 text-xs font-medium rounded border transition-colors">Delay</button>
+        <button @click="scheduleMode = 'fixed'"
+          :class="scheduleMode === 'fixed' ? 'bg-cyan-600/20 text-cyan-400 border-cyan-800/40' : 'text-muted border-border hover:text-text'"
+          class="flex-1 px-3 py-1.5 text-xs font-medium rounded border transition-colors">Specific time</button>
+      </div>
+
+      <!-- Delay mode -->
+      <div x-show="scheduleMode === 'delay'" class="space-y-2">
+        <div class="flex flex-wrap gap-1.5">
+          <template x-for="preset in [5, 15, 30, 60, 120]" :key="preset">
+            <button @click="scheduleDelayMinutes = preset"
+              :class="scheduleDelayMinutes === preset ? 'bg-cyan-600 text-white border-cyan-600' : 'bg-bg border-border text-muted hover:text-text'"
+              class="px-2.5 py-1 text-xs rounded border transition-colors"
+              x-text="preset < 60 ? preset + 'm' : (preset / 60) + 'h'"></button>
+          </template>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="number" x-model.number="scheduleDelayMinutes" min="1" max="1440"
+            class="w-20 bg-bg border border-border rounded px-2 py-1.5 text-sm text-text focus:outline-none focus:border-cyan-600/50 transition-colors">
+          <span class="text-xs text-muted">minutes</span>
+        </div>
+      </div>
+
+      <!-- Fixed time mode -->
+      <div x-show="scheduleMode === 'fixed'">
+        <input type="datetime-local" x-model="scheduleFixedTime"
+          class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-cyan-600/50 transition-colors"
+          :style="'color-scheme: dark'">
+      </div>
+
+      <div class="flex justify-end gap-2 mt-4">
+        <button @click="scheduleModalOpen = false" class="px-3 py-1.5 text-xs text-muted hover:text-text transition-colors">
+          Cancel
+        </button>
+        <button @click="createSchedule()"
+          :disabled="scheduleMode === 'fixed' && !scheduleFixedTime"
+          class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium rounded transition-colors flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Schedule
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

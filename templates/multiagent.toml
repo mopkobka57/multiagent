@@ -1,0 +1,70 @@
+[project]
+name = "{project_name}"
+description = "{project_description}"
+app_dir = "{app_dir}"
+
+[data]
+dir = "{data_dir}"
+specs_dir = "{data_dir}/specs"
+context_files = [
+    "{data_dir}/product_context.md",
+    "{data_dir}/agent_insights.md",
+]
+foundational_specs = [
+    "{data_dir}/specs/_project-conventions.md",
+]
+
+[data.spec_types]
+audit = "{data_dir}/specs/audit"
+feature = "{data_dir}/specs/features"
+tech-debt = "{data_dir}/specs/tech_debt"
+refactor = "{data_dir}/specs/refactor"
+bugfix = "{data_dir}/specs/bugfix"
+
+[quality_gates]
+fast = "cd {app_dir} && npx tsc --noEmit"
+full = "cd {app_dir} && npm run build"
+
+[visual_testing]
+dev_command = "npm run dev -- -p {port}"
+dev_port = 3000
+pages = ["/"]
+
+[git]
+main_branch = "main"
+dev_branch = "auto-dev"
+branch_prefix = "auto/"
+
+[models]
+orchestrator = "opus"
+subagent = "sonnet"
+
+[budgets]
+max_tokens_per_task = 500000
+max_turns_per_subagent = 30
+max_fix_retries = 3
+
+[autonomy]
+mode = "batch"
+human_checkpoints = ["pr_review"]
+
+[protected_paths]
+paths = [
+    "multiagent/",
+    "CLAUDE.md",
+    ".claude/",
+    ".env*",
+    ".gitignore",
+    "{data_dir}/backlog.md",
+    "*/registry.md",
+    "{data_dir}/agent_insights.md",
+    "{data_dir}/product_context.md",
+    "{data_dir}/specs/_*",
+]
+exceptions = ["multiagent/output/"]
+
+[writable_paths]
+paths = ["{app_dir}/", "docs/"]
+
+[backlog]
+type_map = { feature = "feature", tech-debt = "tech-debt", refactor = "refactor", audit = "audit" }

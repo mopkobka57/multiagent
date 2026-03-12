@@ -1,0 +1,7 @@
+output/
+.venv/
+__pycache__/
+*.pyc
+*.lock
+.DS_Store
+.claude/
