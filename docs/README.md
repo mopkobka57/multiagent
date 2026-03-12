@@ -1,174 +1,20 @@
-# Multi-Agent Orchestrator
+# Documentation
 
-A full development pipeline, not just a coding assistant.
+> **Looking for the project overview?** See the [main README](../README.md).
 
-Describe tasks in a backlog — six AI agents handle the rest: spec enrichment, architecture planning, implementation with quality gates, code review, visual testing. Every task gets its own branch. You review and merge.
-
-[![Donate](https://img.shields.io/badge/Donate-ETH%20%2F%20USDT%20%2F%20USDC-8247e5?style=flat&logo=ethereum)](#donate)
-
-![Overview](screenshots/overview.png)
-
-## Before You Start
-
-### Claude Code
-
-This system is built on top of [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview) — Anthropic's CLI tool for agentic coding. You need to install and authenticate it before using the orchestrator.
-
-1. **Install Claude Code:** follow the [official installation guide](https://docs.anthropic.com/en/docs/claude-code/getting-started)
-2. **Log in:** run `claude` and complete authentication
-
-### Token Usage
-
-The multi-agent system can consume a significant amount of tokens — each task involves multiple AI agents (Orchestrator, Product, Analyst, Implementor, Reviewer), and complex tasks may require hundreds of thousands of tokens.
-
-- **API key users:** monitor your usage carefully. Set token budgets in `multiagent.toml` (`[budgets]` section) to control costs. Start with simple tasks to get a feel for consumption.
-- **Claude Pro/Max subscribers:** the system works within your subscription limits. You may hit rate limits on heavy workloads, but the system handles retries automatically.
-
-## Quick Start
-
-See [Getting Started](getting-started.md) for the full walkthrough.
-
-```bash
-# 1. Install
-cd multiagent && python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-
-# 2. Initialize for your project
-cd /your-project && multiagent/.venv/bin/python -m multiagent init
-
-# 3. Describe tasks — via Claude Code, CLI, or manually
-python -m multiagent spec "Add user authentication with JWT"
-
-# 4. Launch the dashboard
-python -m multiagent.server
-# Open http://localhost:8000
-```
-
-After init, you describe tasks, review generated specs, and manage everything through the **web dashboard** — launch agents, group related tasks, watch real-time logs, review results.
-
-## Creating Tasks
-
-The recommended workflow is to describe what you want and let the system generate structured specs.
-
-### Claude Code (Recommended)
-
-Open your project directory in Claude Code and describe the task naturally:
-
-> "I need a dark mode toggle in the settings page that persists the preference"
-
-Claude will create a spec file, assign a task ID, and add the backlog entry. You review and refine.
-
-This is the fastest way to create specs because Claude has full project context — it reads your codebase, conventions, and existing patterns.
-
-### CLI
-
-```bash
-python -m multiagent spec "Add dark mode to settings page"
-python -m multiagent spec --file feature-draft.md
-python -m multiagent spec --file big-plan.md -y    # auto-create multiple specs
-python -m multiagent spec "Fix crash on empty email login" --phase 2
-```
-
-The CLI uses AI to generate a structured spec from a description string or a text file. When a file contains multiple tasks, the CLI detects this and asks whether to create separate specs (`-y` to auto-confirm).
-
-### Full Workflow
-
-```
-init → describe tasks → review specs → dashboard → review branches
-  │          │               │             │              │
-  ▼          ▼               ▼             ▼              ▼
- Setup    Claude Code    Edit specs    Run agents    Merge to main
-         or CLI spec    if needed     via dashboard
-```
-
-For the complete spec writing guide, see **[Writing Specs](writing-specs.md)**.
-
-## How It Works
-
-```
-Backlog → Pick task → Create branch → Enrich spec → Build plan → Implement → QG → Review → Commit
-           │                            │                          │           │
-           ▼                            ▼                          ▼           ▼
-     task_loader.py              Product Agent              Implementor   Reviewer
-                                 Analyst Agent              (per step)    Visual Tester
-```
-
-1. **Task selection** — highest priority actionable task from the backlog
-2. **Branch creation** — `auto/{task_id}` from `auto-dev`
-3. **Spec enrichment** — Product + Analyst agents fill in UX, edge cases, technical plan
-4. **Implementation** — Implementor writes code step by step, quality gates after each step
-5. **Review** — Reviewer checks the full diff, Visual Tester captures screenshots
-6. **Commit** — changes committed on the feature branch for human review
-
-## Web Dashboard
-
-The dashboard is the primary way to interact with the system. Start it with `python -m multiagent.server` and open `http://localhost:8000`.
-
-### Task List & Spec Editor
-
-![Task List](screenshots/task-list.png)
-
-Browse your full backlog with sorting by importance, complexity, type. Click any task to view and edit its spec. The built-in AI editor lets you modify specs with natural language instructions — just describe what to change.
-
-**Task types:** `feature` (green) — full pipeline with Product + Analyst agents. `tech-debt` (orange), `refactor`, `bugfix` — skip Product, go straight to Analyst. `audit` (purple) — read-only analysis, no code changes.
-
-### Spec Groups
-
-Select multiple related tasks, bundle them into a **group**, and run them sequentially on a shared branch. Each task in the group sees changes from the previous ones. Groups can be started, stopped, retried, or scheduled.
-
-![Spec Editor](screenshots/spec-editor.png)
-
-### Execution & Archive
-
-![Archive](screenshots/archive.png)
-
-Watch agents work in real-time with streaming logs. When tasks complete, the archive shows full details: what changed, quality gate results, reviewer report, API cost. Click **Checkout** to switch to any task's branch and review the code.
-
-For complete dashboard documentation, see **[Web Dashboard Guide](dashboard.md)**.
-
-## Agents
-
-| Agent | Model | Role |
-|-------|-------|------|
-| **Orchestrator** | Opus | Plans, delegates, verifies. Never writes code. |
-| **Product** | Sonnet | Defines UX flows, edge cases, scope for feature specs |
-| **Analyst** | Sonnet | Reads codebase, writes technical approach and implementation plan |
-| **Implementor** | Sonnet | Writes code per plan, follows existing patterns |
-| **Reviewer** | Sonnet | Reviews diff for bugs, security issues, pattern violations |
-| **Visual Tester** | Sonnet | Captures screenshots before/after, checks for regressions |
-
-## Commands
-
-The CLI is available for automation and scripting. The dashboard covers all the same functionality.
-
-| Command | Description |
-|---------|-------------|
-| `python -m multiagent init` | Initialize for current project |
-| `python -m multiagent spec "desc"` | Create task spec from description, file (`-f`), or stdin. Auto-splits multi-task files (`-y`) |
-| `python -m multiagent.server` | **Start web dashboard** |
-| `python -m multiagent --list` | List all tasks with status |
-| `python -m multiagent --next` | Run next priority task |
-| `python -m multiagent --task ID` | Run specific task by ID |
-| `python -m multiagent --resume` | Resume interrupted task |
-| `python -m multiagent --batch` | Run all tasks sequentially |
-| `python -m multiagent --batch --phase 2` | Run tasks from a specific phase |
-| `python -m multiagent --mode supervised` | Override autonomy mode |
-
-## Documentation
-
-### User Guides
+## User Guides
 
 | Document | Description |
 |----------|-------------|
 | [Getting Started](getting-started.md) | Installation, initialization, first task (10 min) |
 | [Writing Specs](writing-specs.md) | Creating task specs — Claude Code, CLI, manual, tips for good specs |
-| [Web Dashboard](dashboard.md) | Complete guide to the web UI — task list, spec editor, groups, archive, scheduling |
+| [Web Dashboard](dashboard.md) | Task list, spec editor, groups, archive, scheduling |
 | [Configuration Reference](configuration.md) | Complete `multiagent.toml` reference — all sections and options |
 | [Backlog & Spec Format](backlog-format.md) | Backlog table format, spec file structure, multiple sources |
 | [Autonomy Modes](autonomy-modes.md) | Supervised, batch, autonomous modes and human checkpoints |
 | [Troubleshooting](troubleshooting.md) | Common issues, error diagnosis, performance tuning |
 
-### Technical Reference
+## Technical Reference
 
 | Document | Description |
 |----------|-------------|
@@ -178,11 +24,26 @@ The CLI is available for automation and scripting. The dashboard covers all the 
 | [Safety & Guardrails](safety-and-guardrails.md) | Protected paths, quality gates, cost control, rate limiting |
 | [Extending](extending.md) | Adding agents, gates, sources, task types, server dashboard |
 
-### Historical
+## Historical
 
 | Document | Description |
 |----------|-------------|
 | [Design Document](design_multiagent.md) | Original architecture design (historical reference) |
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `python -m multiagent init` | Initialize for current project |
+| `python -m multiagent spec "desc"` | Create task spec from description, file (`-f`), or stdin |
+| `python -m multiagent.server` | Start web dashboard |
+| `python -m multiagent --list` | List all tasks with status |
+| `python -m multiagent --next` | Run next priority task |
+| `python -m multiagent --task ID` | Run specific task by ID |
+| `python -m multiagent --resume` | Resume interrupted task |
+| `python -m multiagent --batch` | Run all tasks sequentially |
+| `python -m multiagent --batch --phase 2` | Run tasks from a specific phase |
+| `python -m multiagent --mode supervised` | Override autonomy mode |
 
 ## Git Strategy
 
@@ -237,15 +98,3 @@ multiagent/
   output/                  Runtime artifacts (gitignored)
   docs/                    This documentation
 ```
-
----
-
-## Donate
-
-If this project saves you time, consider supporting its development.
-
-| Currency | Network | Address |
-|----------|---------|---------|
-| **USDT** / **USDC** / **ETH** | Ethereum (ERC-20) | `0x8e152C80a5790927BbeE947FF080075f01bDD907` |
-
-> Send only ERC-20 tokens on **Ethereum mainnet**. Other networks are not supported.
