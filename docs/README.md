@@ -1,8 +1,8 @@
 # Multi-Agent Orchestrator
 
-Autonomous task execution system powered by Claude. Reads a backlog,
-picks tasks by priority, writes code through coordinated AI agents,
-runs quality gates, and commits to feature branches for human review.
+A full development pipeline, not just a coding assistant.
+
+Describe tasks in a backlog — six AI agents handle the rest: spec enrichment, architecture planning, implementation with quality gates, code review, visual testing. Every task gets its own branch. You review and merge.
 
 [![Donate](https://img.shields.io/badge/Donate-ETH%20%2F%20USDT%20%2F%20USDC-8247e5?style=flat&logo=ethereum)](#donate)
 
