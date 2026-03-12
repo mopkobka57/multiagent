@@ -6,6 +6,7 @@ This project uses an autonomous [multi-agent orchestrator](multiagent/) to execu
 ### Commands
 
 ```bash
+{run_prefix}.server            # Start web dashboard (http://localhost:8000)
 {run_prefix} --list            # List all tasks with status
 {run_prefix} --next            # Run next priority task
 {run_prefix} --task ID         # Run specific task by ID
@@ -17,7 +18,13 @@ This project uses an autonomous [multi-agent orchestrator](multiagent/) to execu
 
 1. Add tasks to `{data_dir}/backlog.md` (Markdown table with ID, name, type, priority)
 2. Write specs in `{data_dir}/specs/` (or let agents generate from stubs)
-3. Run a task — agents create a branch, enrich the spec, implement, review, commit
+3. Launch the **web dashboard** or use CLI — agents create a branch, enrich the spec, implement, review, commit
+
+### Web dashboard
+
+The dashboard (`{run_prefix}.server`) is the primary interface for managing tasks. It provides: task list with sorting/filtering, inline spec viewer with AI editor, spec groups for running related tasks on a shared branch, real-time execution logs, archive with full run details and artifacts, scheduling for deferred execution.
+
+Full dashboard docs: `multiagent/docs/dashboard.md`
 
 ### Specs
 

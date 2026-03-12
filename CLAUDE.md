@@ -43,12 +43,16 @@ multiagent/
 - **Foundational specs** — files prefixed with `_` in specs/, loaded into every agent's context (conventions, architecture).
 - **Quality gates** — shell commands (tsc, build) run after each implementation step. Configured in `multiagent.toml`.
 - **Autonomy modes** — supervised (confirm each step), batch (confirm per-task), autonomous (hands-off). See `docs/autonomy-modes.md`.
+- **Web dashboard** — FastAPI + Alpine.js SPA for managing tasks, specs, groups, and runs. Real-time logs via WebSocket. See `docs/dashboard.md`.
+- **Spec groups** — bundle related tasks to run sequentially on a shared branch. Created via dashboard UI.
+- **Task types** — feature (full pipeline), tech-debt/refactor/bugfix (skip Product agent), audit (read-only analysis).
 
 ## Key documentation
 
 | Doc | When to read |
 |-----|-------------|
 | `docs/README.md` | Overview, commands, file structure |
+| `docs/dashboard.md` | Web dashboard — task list, spec editor, groups, archive, scheduling |
 | `docs/getting-started.md` | Installation, first task walkthrough |
 | `docs/configuration.md` | Complete `multiagent.toml` reference |
 | `docs/backlog-format.md` | Backlog table format, spec structure, statuses |

@@ -4,6 +4,8 @@ Autonomous task execution system powered by Claude. Reads a backlog,
 picks tasks by priority, writes code through coordinated AI agents,
 runs quality gates, and commits to feature branches for human review.
 
+![Overview](screenshots/overview.png)
+
 ## Quick Start
 
 See [Getting Started](getting-started.md) for the full walkthrough.
@@ -18,9 +20,12 @@ cd /your-project && multiagent/.venv/bin/python -m multiagent init
 
 # 3. Add tasks to agents_data/backlog.md
 
-# 4. Run
-python -m multiagent --next
+# 4. Launch the dashboard
+python -m multiagent.server
+# Open http://localhost:8000
 ```
+
+After init, you describe tasks in a backlog, write minimal specs (or let agents generate them), and manage everything through the **web dashboard** — launch agents, group related tasks, watch real-time logs, review results.
 
 ## How It Works
 
@@ -39,6 +44,32 @@ Backlog → Pick task → Create branch → Enrich spec → Build plan → Imple
 5. **Review** — Reviewer checks the full diff, Visual Tester captures screenshots
 6. **Commit** — changes committed on the feature branch for human review
 
+## Web Dashboard
+
+The dashboard is the primary way to interact with the system. Start it with `python -m multiagent.server` and open `http://localhost:8000`.
+
+### Task List & Spec Editor
+
+![Task List](screenshots/task-list.png)
+
+Browse your full backlog with sorting by importance, complexity, type. Click any task to view and edit its spec. The built-in AI editor lets you modify specs with natural language instructions — just describe what to change.
+
+**Task types:** `feature` (green) — full pipeline with Product + Analyst agents. `tech-debt` (orange), `refactor`, `bugfix` — skip Product, go straight to Analyst. `audit` (purple) — read-only analysis, no code changes.
+
+### Spec Groups
+
+Select multiple related tasks, bundle them into a **group**, and run them sequentially on a shared branch. Each task in the group sees changes from the previous ones. Groups can be started, stopped, retried, or scheduled.
+
+![Spec Editor](screenshots/spec-editor.png)
+
+### Execution & Archive
+
+![Archive](screenshots/archive.png)
+
+Watch agents work in real-time with streaming logs. When tasks complete, the archive shows full details: what changed, quality gate results, reviewer report, API cost. Click **Checkout** to switch to any task's branch and review the code.
+
+For complete dashboard documentation, see **[Web Dashboard Guide](dashboard.md)**.
+
 ## Agents
 
 | Agent | Model | Role |
@@ -52,9 +83,12 @@ Backlog → Pick task → Create branch → Enrich spec → Build plan → Imple
 
 ## Commands
 
+The CLI is available for automation and scripting. The dashboard covers all the same functionality.
+
 | Command | Description |
 |---------|-------------|
 | `python -m multiagent init` | Initialize for current project |
+| `python -m multiagent.server` | **Start web dashboard** |
 | `python -m multiagent --list` | List all tasks with status |
 | `python -m multiagent --next` | Run next priority task |
 | `python -m multiagent --task ID` | Run specific task by ID |
@@ -62,7 +96,6 @@ Backlog → Pick task → Create branch → Enrich spec → Build plan → Imple
 | `python -m multiagent --batch` | Run all tasks sequentially |
 | `python -m multiagent --batch --phase 2` | Run tasks from a specific phase |
 | `python -m multiagent --mode supervised` | Override autonomy mode |
-| `python -m multiagent.server` | Start web dashboard |
 
 ## Documentation
 
@@ -71,6 +104,7 @@ Backlog → Pick task → Create branch → Enrich spec → Build plan → Imple
 | Document | Description |
 |----------|-------------|
 | [Getting Started](getting-started.md) | Installation, initialization, first task (10 min) |
+| [Web Dashboard](dashboard.md) | Complete guide to the web UI — task list, spec editor, groups, archive, scheduling |
 | [Configuration Reference](configuration.md) | Complete `multiagent.toml` reference — all sections and options |
 | [Backlog & Spec Format](backlog-format.md) | Backlog table format, spec file structure, multiple sources |
 | [Autonomy Modes](autonomy-modes.md) | Supervised, batch, autonomous modes and human checkpoints |
@@ -136,8 +170,11 @@ multiagent/
   prompts/                 Agent prompt templates (Markdown)
   templates/               Scaffold templates for init
   server/
-    app.py                 FastAPI web dashboard
-    process_manager.py     Agent subprocess lifecycle
+    app.py                 FastAPI web dashboard + REST API + WebSocket
+    process_manager.py     Agent subprocess lifecycle + queue
+    parsers.py             Backlog + state enrichment for API
+    spec_editor.py         AI-powered spec editing
+    static/                SPA frontend (Alpine.js + Tailwind)
   output/                  Runtime artifacts (gitignored)
   docs/                    This documentation
 ```
