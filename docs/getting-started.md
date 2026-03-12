@@ -137,34 +137,25 @@ Technical conventions that all agents follow. Add your:
 
 ## Add Your First Task
 
-Edit `multiagent_specs/backlog.md` and add a task row:
+The easiest way — describe what you want via Claude Code or the CLI:
 
-```markdown
-## Phase 1: Initial
-
-| ID | Name | Type | Importance | Complexity | Deleg. | Spec | Human | Description |
-|---|---|---|---|---|---|---|---|---|
-| FE1 | Add dark mode toggle | feature | 3 | 2 | high | stub | auto | Add a dark/light mode toggle to the settings page |
+```bash
+python -m multiagent spec "Add a dark/light mode toggle to the settings page"
 ```
 
-Then create a spec file at `multiagent_specs/specs/features/FE1-add-dark-mode-toggle.md`:
+This creates a spec file and adds the backlog entry automatically. You can also
+use a file as input:
 
-```markdown
-# Add Dark Mode Toggle
-
-**Task ID:** FE1
-**Type:** feature
-**Spec Status:** stub
-
----
-
-## Overview
-
-Add a dark/light mode toggle to the settings page. Should persist the
-user's preference in localStorage.
+```bash
+python -m multiagent spec -f requirements.md
 ```
 
-See [Backlog Format](backlog-format.md) for the full format reference.
+If the file describes multiple tasks, the CLI will detect this and offer to
+create separate specs (`-y` to auto-confirm).
+
+**Manual alternative:** edit `multiagent_specs/backlog.md` directly and create
+spec files in `multiagent_specs/specs/`. See [Writing Specs](writing-specs.md)
+and [Backlog Format](backlog-format.md) for details.
 
 ## Run
 

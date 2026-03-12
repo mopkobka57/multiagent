@@ -102,14 +102,19 @@ async def _init_async(data_dir_name: str, non_interactive: bool, refresh: bool) 
     print(f"  {data_dir_name}/agent_insights.md")
     print(f"  {data_dir_name}/product_context.md")
     print(f"  {data_dir_name}/specs/_project-conventions.md")
+    # Compute run_prefix for next steps
+    multiagent_rel = MULTIAGENT_DIR.relative_to(PROJECT_ROOT)
+    run_prefix = f"python -m {str(multiagent_rel).replace('/', '.')}"
+
     print(f"\nNext steps:")
-    print(f"  1. Review multiagent.toml — adjust if needed")
-    print(f"  2. Review CLAUDE.md — add project-specific instructions above the multiagent section")
-    print(f"  3. Review {data_dir_name}/product_context.md — improve if needed")
-    print(f"  4. Add tasks to {data_dir_name}/backlog.md")
-    print(f"  5. Write specs in {data_dir_name}/specs/features/")
-    print(f"  6. Run: python -m multiagent --list")
-    print(f"  7. Run: python -m multiagent --next")
+    print(f"  1. Install dependencies (if not yet):")
+    print(f"       pip install -r {multiagent_rel}/requirements.txt")
+    print(f"  2. Review multiagent.toml and {data_dir_name}/product_context.md — adjust if needed")
+    print(f"  3. Describe tasks — in Claude Code or via CLI:")
+    print(f"       {run_prefix} spec \"Add feature X\"")
+    print(f"       {run_prefix} spec -f requirements.md")
+    print(f"  4. Launch the dashboard:")
+    print(f"       {run_prefix}.server")
     return True
 
 
