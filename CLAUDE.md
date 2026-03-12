@@ -69,6 +69,7 @@ multiagent/
 python -m multiagent init              # Initialize for a project
 python -m multiagent spec "desc"       # Create task spec from description
 python -m multiagent spec -f file.md  # Create task spec from a file
+python -m multiagent spec -f file.md -y  # Auto-create multiple specs from file
 python -m multiagent --list            # List tasks
 python -m multiagent --next            # Run next priority task
 python -m multiagent --task FE5        # Run specific task

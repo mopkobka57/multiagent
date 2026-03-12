@@ -5,6 +5,7 @@ Usage:
     python -m multiagent init                # Initialize for current project
     python -m multiagent spec "description"  # Create a task spec from description
     python -m multiagent spec -f draft.md    # Create a task spec from a file
+    python -m multiagent spec -f draft.md -y # Auto-create multiple specs from file
     python -m multiagent --next              # Run next priority task
     python -m multiagent --task FE1          # Run specific task by ID
     python -m multiagent --resume            # Resume interrupted task
@@ -119,10 +120,15 @@ def _handle_spec():
         "--phase", default="1",
         help="Target backlog phase (default: 1)",
     )
+    parser.add_argument(
+        "-y", "--yes", action="store_true",
+        help="Auto-confirm multi-spec creation (skip prompt)",
+    )
 
     args = parser.parse_args(sys.argv[2:])
 
     description = args.description
+    from_file = False
 
     # --file takes priority over positional description
     if args.file:
@@ -135,11 +141,13 @@ def _handle_spec():
         if not description:
             print(f"Error: file is empty: {args.file}")
             sys.exit(1)
+        from_file = True
 
     # If no description provided, try reading from stdin
     if not description:
         if not sys.stdin.isatty():
             description = sys.stdin.read().strip()
+            from_file = True
         if not description:
             print("Usage: python -m multiagent spec \"description of your task\"")
             print("       python -m multiagent spec --file spec-draft.md")
@@ -147,19 +155,67 @@ def _handle_spec():
             print("\nOptions:")
             print("  --file, -f FILE  Read description from a text file")
             print("  --phase PHASE    Target backlog phase (default: 1)")
+            print("  -y, --yes        Auto-confirm multi-spec creation")
             sys.exit(1)
 
-    from .core.spec_creator import create_spec
-    result = asyncio.run(create_spec(description, phase=args.phase))
+    from .core.spec_creator import create_spec, create_specs_multi, triage_input
 
+    # For file/stdin input: triage to detect multiple tasks
+    if from_file:
+        triage = asyncio.run(triage_input(description))
+
+        if triage["count"] > 1:
+            count = triage["count"]
+            tasks = triage.get("tasks", [])
+            print(f"Detected {count} tasks in the input:")
+            for i, t in enumerate(tasks, 1):
+                title = t.get("title", "Untitled")
+                summary = t.get("summary", "")
+                print(f"  {i}. {title}" + (f" — {summary}" if summary else ""))
+
+            if not args.yes:
+                print(f"\nCreate {count} separate specs, or 1 combined spec?")
+                answer = input(f"  [{count}] / 1: ").strip()
+                if answer == "1":
+                    triage["count"] = 1
+
+            if triage["count"] > 1:
+                results = asyncio.run(
+                    create_specs_multi(description, count, phase=args.phase)
+                )
+                _print_multi_results(results, args.phase)
+                has_errors = any(not r["success"] for r in results)
+                sys.exit(1 if has_errors else 0)
+
+    # Single spec creation
+    result = asyncio.run(create_spec(description, phase=args.phase))
+    _print_single_result(result, args.phase)
+    sys.exit(0 if result["success"] else 1)
+
+
+def _print_single_result(result: dict, phase: str) -> None:
+    """Print result of a single spec creation."""
     if result["success"]:
         print(f"Created: {result['task_id']} — {result['title']}")
         print(f"  Type: {result['type']}")
         print(f"  Spec: {result['file_path']}")
-        print(f"  Backlog entry added to Phase {args.phase}")
+        print(f"  Backlog entry added to Phase {phase}")
     else:
         print(f"Error: {result['error']}")
-        sys.exit(1)
+
+
+def _print_multi_results(results: list[dict], phase: str) -> None:
+    """Print results of multi-spec creation."""
+    success_count = sum(1 for r in results if r["success"])
+    print(f"\nCreated {success_count}/{len(results)} specs:")
+    for r in results:
+        if r["success"]:
+            print(f"  {r['task_id']} — {r['title']} ({r['type']})")
+            print(f"    {r['file_path']}")
+        else:
+            print(f"  FAILED: {r['error']}")
+    if success_count:
+        print(f"Backlog entries added to Phase {phase}")
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ This project uses an autonomous [multi-agent orchestrator](multiagent/) to execu
 {run_prefix}.server            # Start web dashboard (http://localhost:8000)
 {run_prefix} spec "desc"       # Create task spec from description
 {run_prefix} spec -f file.md  # Create task spec from a file
+{run_prefix} spec -f file.md -y  # Auto-create multiple specs from file
 {run_prefix} --list            # List all tasks with status
 {run_prefix} --next            # Run next priority task
 {run_prefix} --task ID         # Run specific task by ID
@@ -57,7 +58,7 @@ For full spec format and examples: `multiagent/docs/backlog-format.md`
 
 ### Creating specs
 
-**CLI:** `{run_prefix} spec "description"` or `{run_prefix} spec -f draft.md` — AI generates spec file + backlog entry from a description or text file.
+**CLI:** `{run_prefix} spec "description"` or `{run_prefix} spec -f draft.md` — AI generates spec file + backlog entry from a description or text file. For files with multiple tasks, add `-y` to auto-create separate specs.
 
 **Manual creation:**
 1. Pick a type prefix: FE (feature), TD (tech-debt), RF (refactor), BF (bugfix), AU (audit)

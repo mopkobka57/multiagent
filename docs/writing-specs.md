@@ -45,6 +45,7 @@ to the backlog. You can then review, edit, and refine.
 ```bash
 python -m multiagent spec "Add dark mode toggle to settings page"
 python -m multiagent spec --file feature-draft.md
+python -m multiagent spec --file big-plan.md -y    # auto-create multiple specs
 python -m multiagent spec "Fix login crash on empty email" --phase 2
 echo "Refactor auth middleware to use new session format" | python -m multiagent spec
 ```
@@ -52,6 +53,11 @@ echo "Refactor auth middleware to use new session format" | python -m multiagent
 The CLI uses AI to generate a structured spec from a description string, a text
 file (`--file` / `-f`), or stdin. It assigns a task ID, creates the spec file,
 and appends the backlog entry.
+
+**Multi-task detection:** When using `--file` or stdin, the CLI first checks if
+the input describes multiple tasks. If it does, it shows the detected tasks and
+asks whether to create separate specs or one combined spec. Pass `-y` to
+auto-confirm creating multiple specs without prompting.
 
 ### Method 3: Manual
 

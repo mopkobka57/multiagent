@@ -47,10 +47,11 @@ This is the fastest way to create specs because Claude has full project context 
 ```bash
 python -m multiagent spec "Add dark mode to settings page"
 python -m multiagent spec --file feature-draft.md
+python -m multiagent spec --file big-plan.md -y    # auto-create multiple specs
 python -m multiagent spec "Fix crash on empty email login" --phase 2
 ```
 
-The CLI uses AI to generate a structured spec from a description string or a text file.
+The CLI uses AI to generate a structured spec from a description string or a text file. When a file contains multiple tasks, the CLI detects this and asks whether to create separate specs (`-y` to auto-confirm).
 
 ### Full Workflow
 
@@ -125,7 +126,7 @@ The CLI is available for automation and scripting. The dashboard covers all the 
 | Command | Description |
 |---------|-------------|
 | `python -m multiagent init` | Initialize for current project |
-| `python -m multiagent spec "desc"` | Create task spec from description or file (`-f`) |
+| `python -m multiagent spec "desc"` | Create task spec from description, file (`-f`), or stdin. Auto-splits multi-task files (`-y`) |
 | `python -m multiagent.server` | **Start web dashboard** |
 | `python -m multiagent --list` | List all tasks with status |
 | `python -m multiagent --next` | Run next priority task |
