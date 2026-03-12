@@ -84,7 +84,7 @@ Full docs: `multiagent/docs/README.md` — getting started, configuration, archi
 
 ### Git strategy
 
-Agents work on `auto/{task_id}` branches from `{dev_branch}`. They never push to remote. Human reviews and merges `{dev_branch}` → `{main_branch}`.
+Agents work on `auto/{{task_id}}` branches from `{dev_branch}`. They never push to remote. Human reviews and merges `{dev_branch}` → `{main_branch}`.
 
 ### Protected paths
 
