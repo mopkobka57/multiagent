@@ -127,7 +127,7 @@ multiagent/
 A task goes through these stages from backlog to commit:
 
 ```
-backlog.md                 agents_data/specs/
+backlog.md                 multiagent_specs/specs/
     │                           │
     ▼                           ▼
 ┌──────────┐            ┌──────────────┐
@@ -185,9 +185,9 @@ All state is file-based (no database). Thread safety is provided by `filelock`.
 | `groups.json` | `output/` | Spec group definitions and progress | JSON array |
 | `schedules.json` | `output/` | Deferred execution timers | JSON array |
 | `server_runs.json` | `output/` | Server process tracking for orphan recovery | JSON |
-| `registry.md` | `agents_data/` | Human-readable execution log (Markdown table) | Markdown |
-| `agent_insights.md` | `agents_data/` | Knowledge base of gotchas for agents | Markdown |
-| `backlog.md` | `agents_data/` | Task backlog with priorities | Markdown table |
+| `registry.md` | `multiagent_specs/` | Human-readable execution log (Markdown table) | Markdown |
+| `agent_insights.md` | `multiagent_specs/` | Knowledge base of gotchas for agents | Markdown |
+| `backlog.md` | `multiagent_specs/` | Task backlog with priorities | Markdown table |
 
 ### State Lifecycle
 
@@ -219,12 +219,12 @@ __main__.py
     │               │   └── _load_from_toml() → populates config.* attrs
     │               │
     │               └── OR fallback: _try_auto_detect()
-    │                   └── Looks for agents_data/ next to multiagent/
+    │                   └── Looks for multiagent_specs/ next to multiagent/
     │
     └── CLI args (--mode) can override config at runtime
 ```
 
-**Priority:** `multiagent.toml` > auto-detection of `agents_data/` > hardcoded defaults
+**Priority:** `multiagent.toml` > auto-detection of `multiagent_specs/` > hardcoded defaults
 
 The `config.py` module exposes all settings as module-level variables. Other modules
 import them directly: `from ..config import PROJECT_ROOT, QUALITY_GATES`.

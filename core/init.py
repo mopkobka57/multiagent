@@ -17,7 +17,7 @@ TEMPLATES_DIR = MULTIAGENT_DIR / "templates"
 
 
 def run_init(
-    data_dir_name: str = "agents_data",
+    data_dir_name: str = "multiagent_specs",
     non_interactive: bool = False,
     refresh: bool = False,
 ) -> bool:

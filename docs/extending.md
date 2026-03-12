@@ -157,7 +157,7 @@ Each source folder needs at minimum a `backlog.md`:
 
 ```
 /path/to/mvp-requirements/
-├── backlog.md          # Required — same format as agents_data/backlog.md
+├── backlog.md          # Required — same format as multiagent_specs/backlog.md
 ├── registry.md         # Auto-created on first task run
 ├── features/           # Spec subdirectories (optional)
 ├── tech_debt/
@@ -176,7 +176,7 @@ using `--next` or `--batch`.
 ### Source Storage
 
 Sources are persisted in `output/sources.json`. The default source
-(`agents_data/`) is always present and cannot be removed.
+(`multiagent_specs/`) is always present and cannot be removed.
 
 ## Custom Task Types
 

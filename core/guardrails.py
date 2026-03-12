@@ -30,7 +30,7 @@ def _matches_pattern(file_path: str, pattern: str) -> bool:
         return file_path.startswith(pattern) or file_path == pattern.rstrip("/")
 
     if "*" in pattern:
-        # For patterns like "agents_data/specs/_*" or ".env*"
+        # For patterns like "multiagent_specs/specs/_*" or ".env*"
         return fnmatch.fnmatch(file_path, pattern)
 
     return file_path == pattern

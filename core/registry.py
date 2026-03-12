@@ -8,7 +8,7 @@ Manages two living documents:
 Both are Markdown files designed to be human-readable AND machine-updatable.
 
 Registry operations support per-source registry files:
-  - Default: agents_data/registry.md
+  - Default: multiagent_specs/registry.md
   - Custom sources: {source_path}/registry.md
 Pass registry_path to write to a specific registry.
 """

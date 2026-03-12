@@ -3,9 +3,9 @@
 ## 1. Problem Statement
 
 MIP has a well-documented backlog:
-- **34 features** with specs in `agents_data/specs/features/`
-- **8 tech debt + 6 refactor tasks** in `agents_data/specs/tech_debt/` and `agents_data/specs/refactor/`
-- **5-phase task backlog** in `agents_data/backlog.md`
+- **34 features** with specs in `multiagent_specs/specs/features/`
+- **8 tech debt + 6 refactor tasks** in `multiagent_specs/specs/tech_debt/` and `multiagent_specs/specs/refactor/`
+- **5-phase task backlog** in `multiagent_specs/backlog.md`
 - Rich architectural specs, insights, and design patterns
 
 Currently, a human (the founder) manually orchestrates Claude Code sessions. The goal: **automate the execution loop** while maintaining quality through multi-agent coordination and human checkpoints.
@@ -230,7 +230,7 @@ Screenshots saved to `multiagent/output/screenshots/[task_id]/before|after/`.
 
 ### 5.1 Task Sources
 
-Tasks are loaded from `agents_data/backlog.md` and normalized into a common format:
+Tasks are loaded from `multiagent_specs/backlog.md` and normalized into a common format:
 
 ```python
 @dataclass
@@ -370,7 +370,7 @@ Level 4: Build broken           → Revert to last clean commit, notify human
 ```
 mip-app/                            # Next.js application
 docs/                               # Project documentation and knowledge
-agents_data/                        # Project-specific data for agents
+multiagent_specs/                        # Project-specific data for agents
   backlog.md                    # Task backlog with phases and priorities
   registry.md                       # Task execution log (status, cost, reports)
   agent_insights.md                 # Critical gotchas discovered by agents
@@ -399,7 +399,7 @@ multiagent/                         # Multi-agent orchestration system (Python p
     quality_gates.py                # Code + visual checks
     retry.py                        # Rate limit handling with exponential backoff
     registry.py                     # Updates registry.md and agent_insights.md
-    task_loader.py                  # Parses tasks from agents_data/backlog.md
+    task_loader.py                  # Parses tasks from multiagent_specs/backlog.md
 
   prompts/                          # System prompts for agents
     orchestrator_system.md

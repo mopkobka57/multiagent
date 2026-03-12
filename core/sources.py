@@ -1,7 +1,7 @@
 """
 Backlog source management — CRUD backed by output/sources.json.
 
-Supports multiple backlog sources: the default agents_data/ plus
+Supports multiple backlog sources: the default multiagent_specs/ plus
 user-added folders, each containing its own backlog.md and spec files.
 """
 
@@ -24,7 +24,7 @@ class BacklogSource:
     name: str            # Display name
     path: str            # Absolute path to folder
     backlog_file: str    # Absolute path to backlog.md inside folder
-    is_default: bool     # True for agents_data — cannot be deleted
+    is_default: bool     # True for multiagent_specs — cannot be deleted
     task_prefix: str = ""  # Prefix for generated task IDs (e.g. "MVP" → MVP_BF1)
 
     @property

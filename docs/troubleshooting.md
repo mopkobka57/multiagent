@@ -129,7 +129,7 @@ Common causes:
 1. **Wrong backlog path** — verify `[data]` section in `multiagent.toml`:
    ```toml
    [data]
-   dir = "agents_data"
+   dir = "multiagent_specs"
    ```
 
 2. **Table format error** — the parser expects a specific Markdown table

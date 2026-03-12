@@ -98,10 +98,10 @@ Available variables (from `_get_prompt_vars()`):
 | `{project_description}` | `config.PROJECT_DESCRIPTION` | `"Next.js SaaS platform"` |
 | `{app_dir}` | `config.APP_DIR` (absolute) | `"/home/user/my-app/frontend"` |
 | `{app_dir_rel}` | `config.APP_DIR` (relative) | `"frontend"` |
-| `{data_dir}` | `config.DATA_DIR` (absolute) | `"/home/user/my-app/agents_data"` |
-| `{data_dir_rel}` | `config.DATA_DIR` (relative) | `"agents_data"` |
-| `{specs_dir}` | `config.SPECS_DIR` (absolute) | `"/home/user/my-app/agents_data/specs"` |
-| `{specs_dir_rel}` | `config.SPECS_DIR` (relative) | `"agents_data/specs"` |
+| `{data_dir}` | `config.DATA_DIR` (absolute) | `"/home/user/my-app/multiagent_specs"` |
+| `{data_dir_rel}` | `config.DATA_DIR` (relative) | `"multiagent_specs"` |
+| `{specs_dir}` | `config.SPECS_DIR` (absolute) | `"/home/user/my-app/multiagent_specs/specs"` |
+| `{specs_dir_rel}` | `config.SPECS_DIR` (relative) | `"multiagent_specs/specs"` |
 | `{quality_gate_fast}` | `config.QUALITY_GATES["fast"]` | `"cd frontend && npx tsc --noEmit"` |
 | `{quality_gate_full}` | `config.QUALITY_GATES["full"]` | `"cd frontend && npm run build"` |
 | `{protected_paths_formatted}` | Formatted list | `"- multiagent/\n- CLAUDE.md"` |

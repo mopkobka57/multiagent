@@ -68,7 +68,7 @@ def enforce_guardrails() -> bool:
 |---------|---------|---------|
 | `dir/` | Everything under `dir/` | `multiagent/` matches `multiagent/core/agents.py` |
 | `file.md` | Exact file | `CLAUDE.md` matches only `CLAUDE.md` |
-| `dir/_*` | Files starting with `_` in `dir/` | `agents_data/specs/_*` matches `_project-conventions.md` |
+| `dir/_*` | Files starting with `_` in `dir/` | `multiagent_specs/specs/_*` matches `_project-conventions.md` |
 | `.env*` | Files starting with `.env` | Matches `.env`, `.env.local`, `.env.production` |
 
 ### Exception Handling
@@ -88,8 +88,8 @@ paths = [
     ".claude/",
     ".env*",
     ".gitignore",
-    "agents_data/backlog.md",
-    "agents_data/specs/_*",
+    "multiagent_specs/backlog.md",
+    "multiagent_specs/specs/_*",
 ]
 exceptions = ["multiagent/output/"]
 ```

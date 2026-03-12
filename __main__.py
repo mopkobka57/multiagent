@@ -87,7 +87,7 @@ def main():
 def _handle_init():
     """Handle the init subcommand."""
     parser = argparse.ArgumentParser(description="Initialize multiagent for this project")
-    parser.add_argument("--data-dir", default="agents_data", help="Name for data directory")
+    parser.add_argument("--data-dir", default="multiagent_specs", help="Name for data directory")
     parser.add_argument("--non-interactive", action="store_true", help="Skip confirmations")
     parser.add_argument("--refresh", action="store_true", help="Re-run analysis only")
 

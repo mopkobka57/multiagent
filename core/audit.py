@@ -151,7 +151,7 @@ def generate_tasks_from_findings(
     Returns list of generated task IDs.
 
     When source_id != "default", specs and backlog entries are written
-    to the custom source's directory instead of the default agents_data/.
+    to the custom source's directory instead of the default multiagent_specs/.
     """
     if not findings:
         return []

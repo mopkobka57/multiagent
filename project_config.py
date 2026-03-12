@@ -33,7 +33,7 @@ def _load_from_toml(toml_path: Path, config):
 
     # --- Data ---
     d = data.get("data", {})
-    config.DATA_DIR = config.PROJECT_ROOT / d.get("dir", "agents_data")
+    config.DATA_DIR = config.PROJECT_ROOT / d.get("dir", "multiagent_specs")
     config.SPECS_DIR = config.PROJECT_ROOT / d.get("specs_dir", str(config.DATA_DIR.relative_to(config.PROJECT_ROOT) / "specs"))
     config.BACKLOG_FILE = config.DATA_DIR / "backlog.md"
     config.REGISTRY_FILE = config.DATA_DIR / "registry.md"
@@ -124,8 +124,8 @@ def _load_from_toml(toml_path: Path, config):
 
 
 def _try_auto_detect(config):
-    """Fallback: detect agents_data/ next to multiagent/ for legacy layout."""
-    legacy_data = config.PROJECT_ROOT / "agents_data"
+    """Fallback: detect multiagent_specs/ next to multiagent/ for legacy layout."""
+    legacy_data = config.PROJECT_ROOT / "multiagent_specs"
     if legacy_data.exists():
         config.PROJECT_NAME = config.PROJECT_ROOT.name
         config.DATA_DIR = legacy_data

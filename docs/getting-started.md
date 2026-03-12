@@ -72,7 +72,7 @@ Detecting project structure...
 Analyzing project with AI (this may take a minute)...
   Done!
 
-Creating agents_data/...
+Creating multiagent_specs/...
 Generating multiagent.toml...
 Writing context files...
 
@@ -82,11 +82,11 @@ Initialization complete!
 
 Created:
   multiagent.toml
-  agents_data/backlog.md
-  agents_data/registry.md
-  agents_data/agent_insights.md
-  agents_data/product_context.md
-  agents_data/specs/_project-conventions.md
+  multiagent_specs/backlog.md
+  multiagent_specs/registry.md
+  multiagent_specs/agent_insights.md
+  multiagent_specs/product_context.md
+  multiagent_specs/specs/_project-conventions.md
 ```
 
 ### Init Options
@@ -117,7 +117,7 @@ The main configuration file. Key things to verify:
 
 See [Configuration Reference](configuration.md) for all options.
 
-### `agents_data/product_context.md`
+### `multiagent_specs/product_context.md`
 
 What the AI understood about your project. The better this document, the
 better agents understand your codebase. Edit it to add context about:
@@ -126,7 +126,7 @@ better agents understand your codebase. Edit it to add context about:
 - Architecture decisions and their reasons
 - Key patterns and conventions
 
-### `agents_data/specs/_project-conventions.md`
+### `multiagent_specs/specs/_project-conventions.md`
 
 Technical conventions that all agents follow. Add your:
 
@@ -137,7 +137,7 @@ Technical conventions that all agents follow. Add your:
 
 ## Add Your First Task
 
-Edit `agents_data/backlog.md` and add a task row:
+Edit `multiagent_specs/backlog.md` and add a task row:
 
 ```markdown
 ## Phase 1: Initial
@@ -147,7 +147,7 @@ Edit `agents_data/backlog.md` and add a task row:
 | FE1 | Add dark mode toggle | feature | 3 | 2 | high | stub | auto | Add a dark/light mode toggle to the settings page |
 ```
 
-Then create a spec file at `agents_data/specs/features/FE1-add-dark-mode-toggle.md`:
+Then create a spec file at `multiagent_specs/specs/features/FE1-add-dark-mode-toggle.md`:
 
 ```markdown
 # Add Dark Mode Toggle

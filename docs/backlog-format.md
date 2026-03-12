@@ -7,7 +7,7 @@ to find spec files.
 ## Backlog (`backlog.md`)
 
 The backlog is a Markdown file with tables organized by phase. It lives at
-`{data_dir}/backlog.md` (default: `agents_data/backlog.md`).
+`{data_dir}/backlog.md` (default: `multiagent_specs/backlog.md`).
 
 ### Table Format
 
@@ -129,7 +129,7 @@ complexity first among equal priorities.
 Spec files live in subdirectories based on their task type:
 
 ```
-agents_data/specs/
+multiagent_specs/specs/
 ├── _project-conventions.md   ← foundational (loaded in every agent context)
 ├── features/
 │   ├── FE1-user-login.md
@@ -251,7 +251,7 @@ Files prefixed with `_` in the specs directory are **foundational** — they're
 loaded into every agent's context, not tied to any specific task.
 
 ```
-agents_data/specs/
+multiagent_specs/specs/
 ├── _project-conventions.md   ← loaded for every task
 ├── _architecture-blocks.md   ← loaded for every task
 └── features/
@@ -263,8 +263,8 @@ Configure which foundational specs to load:
 ```toml
 [data]
 foundational_specs = [
-    "agents_data/specs/_project-conventions.md",
-    "agents_data/specs/_architecture-blocks.md",
+    "multiagent_specs/specs/_project-conventions.md",
+    "multiagent_specs/specs/_architecture-blocks.md",
 ]
 ```
 
@@ -322,7 +322,7 @@ Sources are stored in `output/sources.json`:
 ]
 ```
 
-The default source (`agents_data/`) is always present and cannot be removed.
+The default source (`multiagent_specs/`) is always present and cannot be removed.
 
 ### Task Loading
 
